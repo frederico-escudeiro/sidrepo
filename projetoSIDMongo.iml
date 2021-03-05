@@ -14,5 +14,7 @@
     <orderEntry type="library" name="Maven: org.mongodb:bson:4.2.2" level="project" />
     <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-core:4.2.2" level="project" />
     <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-sync:4.2.2" level="project" />
+    <orderEntry type="library" name="Maven: mysql:mysql-connector-java:8.0.23" level="project" />
+    <orderEntry type="library" name="Maven: com.google.protobuf:protobuf-java:3.11.4" level="project" />
   </component>
 </module>
