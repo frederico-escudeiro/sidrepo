@@ -14,6 +14,7 @@ public class SQLDatabaseConnection {
             // os campos definidos no Excel que propõe a estrutura do excel
 
             String connectionLocalhostURI = "jdbc:mysql://localhost/sid2021";
+
             try (Connection connectionLocalhost = DriverManager.getConnection(connectionLocalhostURI, "root", null); //Conectar à Nuvem para ler
                  Connection connectionCloud = DriverManager.getConnection(connectionCloudURI, "aluno", "aluno"); //Conectar ao PC pessoal para escrever
                  Statement statementLocalhost = connectionLocalhost.createStatement();
@@ -24,7 +25,8 @@ public class SQLDatabaseConnection {
                 ResultSet resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
 
                 while (resultSetCLoud.next()) {
-                    System.out.println(resultSetCLoud.getString(1) + " " + resultSetCLoud.getString(2) + " " + resultSetCLoud.getString(3) + " " + resultSetCLoud.getString(4));
+                    System.out.println(resultSetCLoud.getString(1) + " " + resultSetCLoud.getString(2) +
+                            " " + resultSetCLoud.getString(3) + " " + resultSetCLoud.getString(4));
 
                     //Inserir na tabela 'zona' os valores
                     String selectSqlLocalhost = "INSERT INTO `zona`(`idzona`, `temperatura`, `humidade`, `luz`) VALUES ("+
@@ -34,11 +36,30 @@ public class SQLDatabaseConnection {
                             Double.parseDouble(resultSetCLoud.getString(4))+ ")";
                     statementLocalhost.executeUpdate(selectSqlLocalhost);
                 }
+
+                //ler a tabela 'sensor'
+                selectSqlCloud = "SELECT * FROM 'sensor'";
+                resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
+                while(resultSetCLoud.next()){
+                    System.out.println(resultSetCLoud.getString(1) + " " + resultSetCLoud.getString(2) +
+                            " " + resultSetCLoud.getString(3) + " " + resultSetCLoud.getString(4) + " " + resultSetCLoud.getString((5)));
+
+                    //Inserir os valores na tabela 'sensor'
+                    String selectSqlLocalhost = "INSERT INTO `sensor`(`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ("+
+                            resultSetCLoud.getString(2) + "," +
+                            Integer.parseInt(resultSetCLoud.getString(5)) + "," +
+                            Double.parseDouble(resultSetCLoud.getString(4)) + "," +
+                            Double.parseDouble(resultSetCLoud.getString(3))+ ")";
+                    statementLocalhost.executeUpdate(selectSqlLocalhost);
+
+                }
+
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+
     }
 }
