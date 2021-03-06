@@ -14,16 +14,13 @@ public class MongoToCloud implements MqttCallback {
 
     @Override
     public void connectionLost(Throwable throwable) {
-
     }
 
     @Override
     public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-
     }
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-
     }
 }
