@@ -1,6 +1,7 @@
 package bonsmalandros.projetoSIDMongo;
 
 import java.sql.*;
+import java.util.Locale;
 
 public class SQLDatabaseConnection {
 
@@ -45,11 +46,12 @@ public class SQLDatabaseConnection {
                             " " + resultSetCLoud.getString(3) + " " + resultSetCLoud.getString(4) + " " + resultSetCLoud.getString((5)));
 
                     //Inserir os valores na tabela 'sensor'
-                    String selectSqlLocalhost = "INSERT INTO `sensor`(`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ("+
-                            resultSetCLoud.getString(2) + "," +
-                            Integer.parseInt(resultSetCLoud.getString(5)) + "," +
-                            Double.parseDouble(resultSetCLoud.getString(4)) + "," +
-                            Double.parseDouble(resultSetCLoud.getString(3))+ ")";
+
+                    String selectSqlLocalhost = "INSERT INTO `sensor` (`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ('"+
+                            resultSetCLoud.getString(2) +"', '" +
+                            Integer.parseInt(resultSetCLoud.getString(5)) +"', '" +
+                            Double.parseDouble(resultSetCLoud.getString(4)) +"', '" +
+                            Double.parseDouble(resultSetCLoud.getString(3))+"');";
                     statementLocalhost.executeUpdate(selectSqlLocalhost);
 
                 }
