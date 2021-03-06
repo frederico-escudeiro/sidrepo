@@ -38,7 +38,7 @@ public class SQLDatabaseConnection {
                 }
 
                 //ler a tabela 'sensor'
-                selectSqlCloud = "SELECT * FROM 'sensor'";
+                selectSqlCloud = "SELECT * FROM `sensor`";
                 resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
                 while(resultSetCLoud.next()){
                     System.out.println(resultSetCLoud.getString(1) + " " + resultSetCLoud.getString(2) +
