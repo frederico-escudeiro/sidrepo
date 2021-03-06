@@ -25,6 +25,10 @@ public class SQLDatabaseConnection {
                 String selectSqlCloud = "SELECT * FROM `zona`";
                 ResultSet resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
 
+                //criar tabela zona no localhost
+                String createTable = "CREATE TABLE `sid2021`.`zona` ( `idZona` INT NOT NULL , `temperatura` DOUBLE NOT NULL , `humidade` DOUBLE NOT NULL, `luz` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+                statementLocalhost.executeUpdate(createTable);
+
                 while (resultSetCLoud.next()) {
                     System.out.println(resultSetCLoud.getString(1) + " " + resultSetCLoud.getString(2) +
                             " " + resultSetCLoud.getString(3) + " " + resultSetCLoud.getString(4));
@@ -41,6 +45,12 @@ public class SQLDatabaseConnection {
                 //ler a tabela 'sensor'
                 selectSqlCloud = "SELECT * FROM `sensor`";
                 resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
+
+                //criar a tabela sensor no locahost
+
+                createTable = "CREATE TABLE `sid2021`.`sensor` ( `tipoSensor` CHAR(1) NOT NULL , `idZona` INT NOT NULL , `limiteSup` DOUBLE NOT NULL , `limiteInf` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+                statementLocalhost.executeUpdate(createTable);
+
                 while(resultSetCLoud.next()){
                     System.out.println(resultSetCLoud.getString(1) + " " + resultSetCLoud.getString(2) +
                             " " + resultSetCLoud.getString(3) + " " + resultSetCLoud.getString(4) + " " + resultSetCLoud.getString((5)));
