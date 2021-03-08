@@ -53,7 +53,7 @@ public class SQLDatabaseConnection {
     private static void createTabelaMedicao() throws SQLException {
         String createTable = "CREATE TABLE `sid2021`.`medicao` ( `idMedicao` INT NOT NULL ,  `idSensor` INT ,  `tempo` TIMESTAMP NOT NULL ,  `valorMedicao` DOUBLE NOT NULL ) ENGINE = InnoDB;";
         String addPrimaryKey = "ALTER TABLE `medicao` ADD PRIMARY KEY( `idMedicao`);";
-        String addForeignKey = "ALTER TABLE `medicao` ADD  CONSTRAINT `medicao-sensor` FOREIGN KEY (`idSensor`) REFERENCES `sensor`(`idSensor`) ON DELETE NO ACTION ON UPDATE CASCADE;";
+        String addForeignKey = "ALTER TABLE `medicao` ADD  CONSTRAINT `medicao-sensor` FOREIGN KEY (`idSensor`) REFERENCES `sensor`(`idSensor`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
         statementLocalhost.executeUpdate(addPrimaryKey);
         statementLocalhost.executeUpdate(addForeignKey);
@@ -69,8 +69,8 @@ public class SQLDatabaseConnection {
     private static void createTabelaAlerta() throws SQLException {
         String createTable = "CREATE TABLE `sid2021`.`alerta` ( `idAlerta` INT NOT NULL ,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(50) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL ,  `lumLimSupAlerta` DOUBLE NOT NULL ,  `lumLimInfAlerta` DOUBLE NOT NULL ,  `tempLimSupAlerta` DOUBLE NOT NULL ,  `tempLimInfAlerta` DOUBLE NOT NULL ,  `humLimSupAlerta` DOUBLE NOT NULL ,  `humLimInfAlerta` DOUBLE NOT NULL ,  `intervaloMinimoAvisos` TIME NOT NULL ) ENGINE = InnoDB;";
         String addPrimaryKey = "ALTER TABLE `alerta` ADD PRIMARY KEY( `idAlerta`);";
-        String addForeignKey = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-cultura` FOREIGN KEY (`idCultura`) REFERENCES `cultura`(`idCultura`) ON DELETE NO ACTION ON UPDATE CASCADE;";
-        String addForeignKey2 = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-medicao` FOREIGN KEY (`idMedicao`) REFERENCES `medicao`(`idMedicao`) ON DELETE NO ACTION ON UPDATE CASCADE;";
+        String addForeignKey = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-cultura` FOREIGN KEY (`idCultura`) REFERENCES `cultura`(`idCultura`) ON DELETE CASCADE ON UPDATE CASCADE;";
+        String addForeignKey2 = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-medicao` FOREIGN KEY (`idMedicao`) REFERENCES `medicao`(`idMedicao`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
         statementLocalhost.executeUpdate(addPrimaryKey);
         statementLocalhost.executeUpdate(addForeignKey);
@@ -114,8 +114,6 @@ public class SQLDatabaseConnection {
             connectionLocalhost = DriverManager.getConnection(connectionLocalhostURI + dbName, "root", null);
             statementLocalhost = connectionLocalhost.createStatement();
 
-            String createTable;
-            String addPrimaryKey;
             //criar tabela zona no localhost
             if(!hasTable("zona")){
                 createTabelaZona();
@@ -179,7 +177,6 @@ public class SQLDatabaseConnection {
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
-
     }
 }
 
