@@ -189,4 +189,16 @@ INSERT INTO `alerta` (`idAlerta`, `idCultura`, `idMedicao`, `tipoAlerta`, `mensa
 
 
 
+BEGIN
+
+WHILE EXISTS( SELECT * FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.valorMedicao<=cultura.tempLimInfAlerta )
+BEGIN
+
+CALL create_alerta()
+
+END
+
+
+CREATE PROCEDURE `create_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoMensagem` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idAlerta`,`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ((SELECT MAX(idAlerta) FROM alerta)+1,idCultura, idMedicao, tipoAlerta, mensagem); END
+
  */
