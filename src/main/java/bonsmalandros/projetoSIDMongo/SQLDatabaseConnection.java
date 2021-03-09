@@ -188,17 +188,11 @@ INSERT INTO `medicao` (`idMedicao`, `idSensor`, `tempo`, `valorMedicao`) VALUES 
 INSERT INTO `alerta` (`idAlerta`, `idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `intervaloMinimoAvisos`) VALUES ('2', '0', '0', 'PERIGO', 'O André está com ganas de comer blica', '20', '10', '20', '10', '20', '10', '10');
 
 
+//TRIGEEEEEEEEEER
 
-BEGIN
+DROP TRIGGER IF EXISTS `riscoProximoDoLimite`;CREATE DEFINER=`root`@`localhost` TRIGGER `riscoProximoDoLimite` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN SET @test :=(SELECT cultura.tempLimInfAlerta FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.valorMedicao<=cultura.tempLimInfAlerta); SET @decr :=(SELECT COUNT(*) FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.valorMedicao<=cultura.tempLimInfAlerta); WHILE @decr !=0 DO CALL `Create_Alerta`(0, new.idMedicao , 'Cavalo', 'ASD'); SET @decr := @decr-1; END WHILE; END
 
-WHILE EXISTS( SELECT * FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.valorMedicao<=cultura.tempLimInfAlerta )
-BEGIN
+/PROCEDIMENTOOOOOOO
 
-CALL create_alerta()
-
-END
-
-
-CREATE PROCEDURE `create_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoMensagem` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idAlerta`,`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ((SELECT MAX(idAlerta) FROM alerta)+1,idCultura, idMedicao, tipoAlerta, mensagem); END
-
+DROP PROCEDURE `create_alerta`; CREATE DEFINER=`root`@`localhost` PROCEDURE `create_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoMensagem` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END
  */
