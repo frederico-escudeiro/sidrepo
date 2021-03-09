@@ -85,7 +85,7 @@ public class MongoToCloud implements MqttCallback {
         (new MongoToCloud()).connectCloud();
         (new MongoToCloud()).jsonToCloud();
     }
-}
+
     protected String getSaltString() {
         String var1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         StringBuilder var2 = new StringBuilder();
@@ -136,6 +136,7 @@ public class MongoToCloud implements MqttCallback {
         MongoDatabase database = client.getDatabase(mongo_database);
         System.out.println("Connection To Mongo Suceeded");
         MongoCollection collection = database.getCollection(mongo_collection);
+        System.out.println("col " + mongo_collection);
         MongoCollection collectionBackup = database.getCollection(backup_collection);
         Document document = new Document();
         if (!mongo_fieldquery.equals("null")) {
@@ -147,25 +148,25 @@ public class MongoToCloud implements MqttCallback {
         int idDocument = 0;
 
         while(!isNotLooping) {
-            System.out.println("loop number ....." + loopNumber);
+            //System.out.println("loop number ....." + loopNumber);
             Date currentDate = new Date(System.currentTimeMillis());
             System.out.println(dateFormat.format(currentDate) + "\n");
-            this.writeSensor("{Loop:" + loopNumber + "}");
+            //this.writeSensor("{Loop:" + loopNumber + "}");
             FindIterable findIterable = collection.find(document);
             MongoCursor var14 = findIterable.iterator();
-            //int var15 = 1;
+            int var15 = 1;
             MongoCursor mongoCursor = findIterable.projection(Projections.excludeId()).iterator();
 
             while(mongoCursor.hasNext()) {
                 ++loopNumber;
-                //++var15;
+                ++var15;
                 ++idDocument;
-                //new Document();
+                new Document();
                 Document tempDocument = (Document)mongoCursor.next();
                 String tempJson = tempDocument.toJson();
                 tempJson = "{id:" + idDocument + ", doc:" + tempJson + "}";
                 if (display_documents.equals("true")) {
-                    System.out.println(tempJson + "\n");
+                    System.out.println(tempJson);
                 }
 
                 if (create_backup.equals("true")) {

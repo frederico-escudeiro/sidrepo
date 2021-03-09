@@ -98,7 +98,7 @@ public class App
     	// Dados local
     	ConnectionString connectionStringLocal = new ConnectionString(uri_local);
     	
-    	 mongoClientLocal= MongoClients.create(connectionStringLocal);
+    	mongoClientLocal= MongoClients.create(connectionStringLocal);
     	
     	mongoDbLocal = mongoClientLocal.getDatabase(db_name_local);
     	
@@ -179,6 +179,6 @@ public class App
     	System.out.println("T1: " + results_t1.size());
     	//System.out.println("T2: " + results_t2.size());
     	
-        System.out.println("Docs in T1: " + mongoColNuvemT1.countDocuments());
+        //System.out.println("Docs in T1: " + mongoColNuvemT1.countDocuments());
     }
 }
