@@ -72,7 +72,7 @@ public class App
 	private static Date currentDate = new Date();
 	private static Date lateDate = new Date();
 	private static long timeDifMilliSeconds = 1000;		//1000*60*60*35;
-		
+
     public static void main( String[] args )
     {
     	
@@ -103,6 +103,7 @@ public class App
     	mongoDbLocal = mongoClientLocal.getDatabase(db_name_local);
     	
     	mongoColLocalDados= mongoDbLocal.getCollection(col_name_local);
+
     	
     	// Pesquisas
     	Bson queryFilter = Filters.gte("Data",lateTime);
@@ -179,6 +180,6 @@ public class App
     	System.out.println("T1: " + results_t1.size());
     	//System.out.println("T2: " + results_t2.size());
     	
-        System.out.println("Docs in T1: " + mongoColNuvemT1.countDocuments());
+        //System.out.println("Docs in T1: " + mongoColNuvemT1.countDocuments());
     }
 }

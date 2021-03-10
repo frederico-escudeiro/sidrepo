@@ -1,11 +1,7 @@
 package bonsmalandros.projetoSIDMongo;
-import com.mongodb.DBCollection;
+import com.mongodb.*;
+import com.mongodb.client.*;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import java.io.FileInputStream;
@@ -13,7 +9,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
 import java.util.Random;
-
 import org.bson.Document;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -24,27 +19,27 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 public class MongoToCloud implements MqttCallback {
     static MqttClient mqttclient;
 
-    static String cloud_server = new String();
-    static String cloud_topic = new String();
+    static String cloud_server ;
+    static String cloud_topic ;
 
-    static String mongo_user = new String();
-    static String mongo_password = new String();
+    static String mongo_user;
+    static String mongo_password ;
 
     static DBCollection table;
-    static String mongo_replica = new String();
-    static String mongo_address = new String();
-    static String mongo_database = new String();
-    static String mongo_collection = new String();
-    static String mongo_criteria = new String();
-    static String mongo_fieldquery = new String();
-    static String mongo_fieldvalue = new String();
-    static String delete_document = new String();
-    static String loop_query = new String();
-    static String create_backup = new String();
-    static String backup_collection = new String();
-    static String display_documents = new String();
-    static String seconds_wait = new String();
-    static String mongo_authentication = new String();
+    static String mongo_replica ;
+    static String mongo_address ;
+    static String mongo_database ;
+    static String mongo_collection ;
+    static String mongo_criteria ;
+    static String mongo_fieldquery ;
+    static String mongo_fieldvalue ;
+    static String delete_document ;
+    static String loop_query ;
+    static String create_backup ;
+    static String backup_collection ;
+    static String display_documents ;
+    static String seconds_wait ;
+    static String mongo_authentication ;
 
     public MongoToCloud(){
     }
@@ -85,7 +80,7 @@ public class MongoToCloud implements MqttCallback {
         (new MongoToCloud()).connectCloud();
         (new MongoToCloud()).jsonToCloud();
     }
-}
+
     protected String getSaltString() {
         String var1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         StringBuilder var2 = new StringBuilder();
