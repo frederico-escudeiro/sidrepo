@@ -98,7 +98,7 @@ public class App
     	// Dados local
     	ConnectionString connectionStringLocal = new ConnectionString(uri_local);
     	
-    	 mongoClientLocal= MongoClients.create(connectionStringLocal);
+    	mongoClientLocal= MongoClients.create(connectionStringLocal);
     	
     	mongoDbLocal = mongoClientLocal.getDatabase(db_name_local);
     	
