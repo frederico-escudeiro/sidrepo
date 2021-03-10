@@ -1,5 +1,6 @@
 package bonsmalandros.projetoSIDMongo;
 import com.mongodb.DBCollection;
+import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
@@ -21,7 +22,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class MongoToCloud implements MqttCallback {
+public class MongoToCloud extends Thread implements MqttCallback {
     static MqttClient mqttclient;
 
     static String cloud_server = new String();
@@ -47,43 +48,37 @@ public class MongoToCloud implements MqttCallback {
     static String mongo_authentication = new String();
 
     public MongoToCloud(){
+        try {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("MongoToCloud.ini"));
+        cloud_server = properties.getProperty("cloud_server");
+        cloud_topic = properties.getProperty("cloud_topic");
+
+        mongo_address = properties.getProperty("mongo_address");
+        mongo_database = properties.getProperty("mongo_database");
+        mongo_collection = properties.getProperty("mongo_collection");
+        mongo_user = properties.getProperty("mongo_user");
+        mongo_password = properties.getProperty("mongo_password");
+        mongo_authentication = properties.getProperty("mongo_authentication");
+        mongo_replica = properties.getProperty("mongo_replica");
+        mongo_fieldquery = properties.getProperty("mongo_fieldquery");
+        mongo_fieldvalue = properties.getProperty("mongo_fieldvalue");
+        delete_document = properties.getProperty("delete_document");
+        create_backup = properties.getProperty("create_backup");
+        backup_collection = properties.getProperty("backup_collection");
+        seconds_wait = properties.getProperty("delay");
+        loop_query = properties.getProperty("loop_query");
+
+        display_documents = properties.getProperty("display_documents");
+
+    } catch (Exception properties) {
+        System.out.println("Error reading MongoToCloud.ini file " + properties);
+    }
     }
 
-
-
     public static void main(String[] args) {
-        try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream("MongoToCloud.ini"));
-            cloud_server = properties.getProperty("cloud_server");
-            cloud_topic = properties.getProperty("cloud_topic");
-
-            mongo_address = properties.getProperty("mongo_address");
-            mongo_database = properties.getProperty("mongo_database");
-            mongo_collection = properties.getProperty("mongo_collection");
-            mongo_user = properties.getProperty("mongo_user");
-            mongo_password = properties.getProperty("mongo_password");
-            mongo_authentication = properties.getProperty("mongo_authentication");
-            mongo_replica = properties.getProperty("mongo_replica");
-            mongo_fieldquery = properties.getProperty("mongo_fieldquery");
-            mongo_fieldvalue = properties.getProperty("mongo_fieldvalue");
-            delete_document = properties.getProperty("delete_document");
-            create_backup = properties.getProperty("create_backup");
-            backup_collection = properties.getProperty("backup_collection");
-            seconds_wait = properties.getProperty("delay");
-            loop_query = properties.getProperty("loop_query");
-
-            display_documents = properties.getProperty("display_documents");
 
 
-
-
-        } catch (Exception properties) {
-            System.out.println("Error reading MongoToCloud.ini file " + properties);
-        }
-
-        (new MongoToCloud()).connectCloud();
-        (new MongoToCloud()).jsonToCloud();
     }
 
     protected String getSaltString() {
@@ -105,14 +100,14 @@ public class MongoToCloud implements MqttCallback {
             mqttclient = new MqttClient(cloud_server, "MongoToCloud" + this.getSaltString() + cloud_topic);
             mqttclient.connect();
             mqttclient.setCallback(this);
-            mqttclient.subscribe(cloud_topic);
+            mqttclient.subscribe(cloud_topic); //Não precisa de dar subscribe, é devido a Leitura
             System.out.println("Connection To Cloud Suceeded");
         } catch (MqttException e) {
             e.printStackTrace();
         }
     }
 
-    public void jsonToCloud() {
+    public void run() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         //new String();
         //new String();
@@ -147,6 +142,8 @@ public class MongoToCloud implements MqttCallback {
         int loopNumber = 0;
         int idDocument = 0;
 
+
+
         while(!isNotLooping) {
             //System.out.println("loop number ....." + loopNumber);
             Date currentDate = new Date(System.currentTimeMillis());
@@ -163,17 +160,18 @@ public class MongoToCloud implements MqttCallback {
                 ++idDocument;
                 new Document();
                 Document tempDocument = (Document)mongoCursor.next();
-                String tempJson = tempDocument.toJson();
-                tempJson = "{id:" + idDocument + ", doc:" + tempJson + "}";
+                String dadosJson = tempDocument.toJson();
+                dadosJson = "{id:" + idDocument + ", doc:" + dadosJson + "}";
                 if (display_documents.equals("true")) {
-                    System.out.println(tempJson);
+                    System.out.println(dadosJson);
                 }
 
+                /* TODO (poderá ter problemas na inserção).
                 if (create_backup.equals("true")) {
                     collectionBackup.insertOne(tempDocument);
                 }
-
-                this.writeSensor(tempJson);
+                */
+                this.writeSensor(dadosJson);
                 if (!seconds_wait.equals("0")) {
                     try {
                         Thread.sleep((long)Integer.parseInt(seconds_wait));
@@ -202,9 +200,9 @@ public class MongoToCloud implements MqttCallback {
 
     public void writeSensor(String var1) {
         try {
-            MqttMessage var2 = new MqttMessage();
-            var2.setPayload(var1.getBytes());
-            mqttclient.publish(cloud_topic, var2);
+            MqttMessage message = new MqttMessage();
+            message.setPayload(var1.getBytes());
+            mqttclient.publish(cloud_topic, message);
         } catch (MqttException var3) {
             var3.printStackTrace();
         }

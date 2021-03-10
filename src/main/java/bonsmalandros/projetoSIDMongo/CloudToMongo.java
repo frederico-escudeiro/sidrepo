@@ -20,7 +20,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class CloudToMongo implements MqttCallback {
+public class CloudToMongo extends Thread implements MqttCallback {
     MqttClient mqttclient;
     static MongoClient mongoClient;
     static DB db;
@@ -62,11 +62,21 @@ public class CloudToMongo implements MqttCallback {
             System.out.println("Error reading CloudToMongo.ini file " + e);
         }
 
-        (new CloudToMongo()).connectCloud();
+        CloudToMongo[] threads = new CloudToMongo[6];
+        try {
+            for (int i = 0; i<threads.length;i++ ) {
+                threads[i] = new CloudToMongo();
+                //cloud_topic += (i+1);
+                threads[i].start();
+                threads[i].join();
+            }
+        }catch(InterruptedException e){
+            System.out.println("Interrompidas as Threads");
+        }
         //(new CloudToMongo()).connectSQL();
     }
 
-    public void connectCloud() {
+    public void run() {
         try {
             int randomNum = (new Random()).nextInt(100000);
             /*                                  broker,                              clientId                            */
@@ -109,7 +119,7 @@ public class CloudToMongo implements MqttCallback {
 
             //if (display_documents.equals("true")) {
                 System.out.println(message.toString());
-                /* Tratamento da mensagem*/
+                /* Tratamento da mensagem feito pela thread*/
 
 
             //}
