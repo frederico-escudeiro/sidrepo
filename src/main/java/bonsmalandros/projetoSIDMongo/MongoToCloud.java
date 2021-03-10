@@ -47,16 +47,15 @@ public class MongoToCloud extends Thread implements MqttCallback {
     static String seconds_wait = new String();
     static String mongo_authentication = new String();
 
-    public MongoToCloud(){
+    public MongoToCloud(String cloudTopic,String collection){
         try {
         Properties properties = new Properties();
         properties.load(new FileInputStream("MongoToCloud.ini"));
         cloud_server = properties.getProperty("cloud_server");
-        cloud_topic = properties.getProperty("cloud_topic");
-
+        cloud_topic = cloudTopic;
         mongo_address = properties.getProperty("mongo_address");
         mongo_database = properties.getProperty("mongo_database");
-        mongo_collection = properties.getProperty("mongo_collection");
+        mongo_collection = collection;
         mongo_user = properties.getProperty("mongo_user");
         mongo_password = properties.getProperty("mongo_password");
         mongo_authentication = properties.getProperty("mongo_authentication");
@@ -68,7 +67,6 @@ public class MongoToCloud extends Thread implements MqttCallback {
         backup_collection = properties.getProperty("backup_collection");
         seconds_wait = properties.getProperty("delay");
         loop_query = properties.getProperty("loop_query");
-
         display_documents = properties.getProperty("display_documents");
 
     } catch (Exception properties) {
@@ -206,7 +204,6 @@ public class MongoToCloud extends Thread implements MqttCallback {
         } catch (MqttException var3) {
             var3.printStackTrace();
         }
-
     }
 
     @Override
