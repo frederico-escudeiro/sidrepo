@@ -23,20 +23,17 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class MongoToCloud extends Thread implements MqttCallback {
-    static MqttClient mqttclient;
+    MqttClient mqttclient;
 
     static String cloud_server = new String();
     static String cloud_topic = new String();
 
     static String mongo_user = new String();
     static String mongo_password = new String();
-
-    static DBCollection table;
     static String mongo_replica = new String();
     static String mongo_address = new String();
     static String mongo_database = new String();
     static String mongo_collection = new String();
-    static String mongo_criteria = new String();
     static String mongo_fieldquery = new String();
     static String mongo_fieldvalue = new String();
     static String delete_document = new String();
@@ -47,16 +44,15 @@ public class MongoToCloud extends Thread implements MqttCallback {
     static String seconds_wait = new String();
     static String mongo_authentication = new String();
 
-    public MongoToCloud(){
+    public MongoToCloud(String collection, String topic){
         try {
         Properties properties = new Properties();
         properties.load(new FileInputStream("MongoToCloud.ini"));
         cloud_server = properties.getProperty("cloud_server");
-        cloud_topic = properties.getProperty("cloud_topic");
-
+        cloud_topic = topic;
         mongo_address = properties.getProperty("mongo_address");
         mongo_database = properties.getProperty("mongo_database");
-        mongo_collection = properties.getProperty("mongo_collection");
+        mongo_collection = collection;
         mongo_user = properties.getProperty("mongo_user");
         mongo_password = properties.getProperty("mongo_password");
         mongo_authentication = properties.getProperty("mongo_authentication");
@@ -68,17 +64,11 @@ public class MongoToCloud extends Thread implements MqttCallback {
         backup_collection = properties.getProperty("backup_collection");
         seconds_wait = properties.getProperty("delay");
         loop_query = properties.getProperty("loop_query");
-
         display_documents = properties.getProperty("display_documents");
 
     } catch (Exception properties) {
         System.out.println("Error reading MongoToCloud.ini file " + properties);
     }
-    }
-
-    public static void main(String[] args) {
-
-
     }
 
     protected String getSaltString() {
@@ -95,22 +85,20 @@ public class MongoToCloud extends Thread implements MqttCallback {
         return var5;
     }
 
-    public void connectCloud() {
+    public void connectToBroker() {
         try {
             mqttclient = new MqttClient(cloud_server, "MongoToCloud" + this.getSaltString() + cloud_topic);
             mqttclient.connect();
             mqttclient.setCallback(this);
-            mqttclient.subscribe(cloud_topic); //Não precisa de dar subscribe, é devido a Leitura
+            //mqttclient.subscribe(cloud_topic); //Não precisa de dar subscribe, é devido a Leitura
             System.out.println("Connection To Cloud Suceeded");
         } catch (MqttException e) {
             e.printStackTrace();
         }
     }
 
-    public void run() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
-        //new String();
-        //new String();
+    public String getMongoAdress(){
+
         String address = "mongodb://";
         if (mongo_authentication.equals("true")) {
             address = address + mongo_user + ":" + mongo_password + "@";
@@ -126,39 +114,34 @@ public class MongoToCloud extends Thread implements MqttCallback {
         } else if (mongo_authentication.equals("true")) {
             address = address + "/?authSource=admin";
         }
+        return address;
+    }
 
-        MongoClient client = new MongoClient(new MongoClientURI(address));
+    public void run() {
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        MongoClient client = new MongoClient(new MongoClientURI(getMongoAdress()));
         MongoDatabase database = client.getDatabase(mongo_database);
         System.out.println("Connection To Mongo Suceeded");
         MongoCollection collection = database.getCollection(mongo_collection);
-        System.out.println("col " + mongo_collection);
-        MongoCollection collectionBackup = database.getCollection(backup_collection);
+        //MongoCollection collectionBackup = database.getCollection(backup_collection);
         Document document = new Document();
+
         if (!mongo_fieldquery.equals("null")) {
             document.put(mongo_fieldquery, mongo_fieldvalue);
         }
 
         boolean isNotLooping = false;
-        int loopNumber = 0;
         int idDocument = 0;
-
-
-
         while(!isNotLooping) {
-            //System.out.println("loop number ....." + loopNumber);
             Date currentDate = new Date(System.currentTimeMillis());
             System.out.println(dateFormat.format(currentDate) + "\n");
-            //this.writeSensor("{Loop:" + loopNumber + "}");
             FindIterable findIterable = collection.find(document);
-            MongoCursor var14 = findIterable.iterator();
-            int var15 = 1;
             MongoCursor mongoCursor = findIterable.projection(Projections.excludeId()).iterator();
 
+            //PROCURAR E ENVIAR DOCUMENTOS
             while(mongoCursor.hasNext()) {
-                ++loopNumber;
-                ++var15;
                 ++idDocument;
-                new Document();
                 Document tempDocument = (Document)mongoCursor.next();
                 String dadosJson = tempDocument.toJson();
                 dadosJson = "{id:" + idDocument + ", doc:" + dadosJson + "}";
@@ -171,6 +154,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
                     collectionBackup.insertOne(tempDocument);
                 }
                 */
+
                 this.writeSensor(dadosJson);
                 if (!seconds_wait.equals("0")) {
                     try {
