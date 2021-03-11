@@ -8,7 +8,7 @@ public class SQLDatabaseConnection {
     private static Connection connectionCloud;
     private static Statement statementLocalhost;
     private static Statement statementCloud;
-    private static final String dbName = "sidCiencia";
+    private static final String dbName = "sid2021";
 
     private static boolean databaseExists() throws SQLException {
         ResultSet resultSet = connectionLocalhost.getMetaData().getCatalogs();
@@ -130,6 +130,85 @@ public class SQLDatabaseConnection {
                 createTabelaAlerta();
             }
 
+            //criar procedimento do alerta
+            String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `create_alerta`";
+            String createAlertaProcedure = "CREATE PROCEDURE `create_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END;";
+            statementLocalhost.executeUpdate(dropProcedimentoAlerta);
+            statementLocalhost.executeUpdate(createAlertaProcedure);
+
+            //criar procedimento da medicao
+            String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `create_medicao`";
+            String createMedicaoProcedure = "CREATE PROCEDURE `create_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES (idSensor, tempo, valorMedicao); END";
+            statementLocalhost.executeUpdate(dropProcedimentoMedicao);
+            statementLocalhost.executeUpdate(createMedicaoProcedure);
+
+            //criar procedimento da cultura
+            String dropProcedimentoCultura = "DROP PROCEDURE IF EXISTS `create_cultura`";
+            String createCulturaProcedure = "CREATE PROCEDURE `create_cultura`(IN `nomeCultura` VARCHAR(50), IN `idUtilizador` INT, IN `idZona` INT, IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (nomeCultura, idUtilizador, idZona, lumLimSup, lumLimInf, tempLimSup, tempLimInf, humLimSup, humLimInf, lumLimSupAlerta, lumLimInfAlerta, tempLimSupAlerta, tempLimInfAlerta, humLimSupAlerta, humLimInfAlerta); END";
+            statementLocalhost.executeUpdate(dropProcedimentoCultura);
+            statementLocalhost.executeUpdate(createCulturaProcedure);
+
+            //criar trigger do limite de alerta
+            String dropTriggerLimiteAlerta = "DROP TRIGGER IF EXISTS `RiscoProximoDoLimite`";
+            String createAlertaTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `RiscoProximoDoLimite` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
+                    "DECLARE id int; \n" +
+                    "DECLARE isRiscoModerado int; \n" +
+                    "CREATE TEMPORARY TABLE items (idCultura int); \n" +
+                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); \n" +
+                    "\n" +
+                    "IF @tipo = 'T' THEN \n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.tempLimInfAlerta OR new.valorMedicao>=cultura.tempLimSupAlerta)); \n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "DELETE FROM items WHERE (idCultura = @id); \n" +
+                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<cultura.tempLimInfAlerta)); \n" +
+                    "IF isRiscoModerado>0 THEN\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "ELSE \n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Temperatura Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da temperatura tolerável pela cultura.');\n" +
+                    "END IF;\n" +
+                    "END WHILE; \n" +
+                    "END IF; \n" +
+                    "\n" +
+                    "IF @tipo = 'H' THEN \n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.humLimInfAlerta OR new.valorMedicao>=cultura.humLimSupAlerta)); \n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "DELETE FROM items WHERE (idCultura = @id);\n" +
+                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<cultura.humLimInfAlerta)); \n" +
+                    "IF isRiscoModerado>0 THEN\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da humidade tolerável pela cultura.');\n" +
+                    "ELSE\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Humidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites de humidade tolerável pela cultura.');\n" +
+                    "END IF;\n" +
+                    "END WHILE; \n" +
+                    "END IF; \n" +
+                    "\n" +
+                    "IF @tipo = 'L' THEN \n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.lumLimInfAlerta OR new.valorMedicao>=cultura.lumLimSupAlerta)); \n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "DELETE FROM items WHERE (idCultura = @id); \n" +
+                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.lumLimSup AND new.valorMedicao>cultura.lumLimSupAlerta) OR (new.valorMedicao>cultura.lumLimInf AND new.valorMedicao<cultura.lumLimInfAlerta)); \n" +
+                    "IF isRiscoModerado>0 THEN\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Luminosidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da luminosidade tolerável pela cultura.');\n" +
+                    "ELSE\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Luminosidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da luminosidade tolerável pela cultura.');\n" +
+                    "END IF;\n" +
+                    "END WHILE; \n" +
+                    "END IF; \n" +
+                    "END";
+            statementLocalhost.executeUpdate(dropTriggerLimiteAlerta);
+            statementLocalhost.executeUpdate(createAlertaTrigger);
+
+
+            //criar trigger do valor fora do limite do sensor
+            String dropTriggerValorInvalido = "DROP TRIGGER IF EXISTS `valor_invalido`";
+            String createForaDoLimiteTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `valor_invalido` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN DECLARE nInvalidos integer; SELECT COUNT(*) into nInvalidos FROM sensor, medicao WHERE sensor.idSensor=new.idSensor AND (sensor.limiteSup<new.valorMedicao OR sensor.limiteInf>new.valorMedicao); IF nInvalidos>0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido recusado!'; END IF; END;";
+            statementLocalhost.executeUpdate(dropTriggerValorInvalido);
+            statementLocalhost.executeUpdate(createForaDoLimiteTrigger);
+
+
             //Ler a tabela 'zona'
             String selectSqlCloud = "SELECT * FROM `zona`";
             ResultSet resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
@@ -162,18 +241,14 @@ public class SQLDatabaseConnection {
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
 
-            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (NULL, 'pêssegos', NULL, '2', '10', '0', '10', '0', '10', '0', '20', '10', '20', '10', '20', '10');";
+            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10');";
             statementLocalhost.executeUpdate(insertCultura);
             String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES ('1', current_timestamp(), '2');";
             statementLocalhost.executeUpdate(insertMedicao);
             //String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `intervaloMinimoAvisos`) VALUES ('1', '1', 'PERIGO', 'asd', '20');\n";
             //statementLocalhost.executeUpdate(insertAlerta);
 
-            String createAlertaProcedure = "DROP PROCEDURE IF EXISTS `create_alerta`; CREATE PROCEDURE `create_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END";
-            statementLocalhost.executeUpdate(createAlertaProcedure);
 
-            String createAlertaTrigger = "DROP TRIGGER IF EXISTS `RiscoProximoDoLimite`;CREATE DEFINER=`root`@`localhost` TRIGGER `RiscoProximoDoLimite` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN DECLARE id int; CREATE TEMPORARY TABLE items ( idCultura int); SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); IF @tipo = 'T' THEN INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.tempLimInfAlerta OR new.valorMedicao>=cultura.tempLimSupAlerta)); WHILE EXISTS(SELECT * FROM items) DO SET @id := (SELECT * FROM items LIMIT 1); DELETE FROM items WHERE (idCultura = @id); CALL `Create_Alerta`(@id, new.idMedicao , 'PERIGO', 'ASD'); END WHILE; END IF; IF @tipo = 'H' THEN INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.humLimInfAlerta OR new.valorMedicao>=cultura.humLimSupAlerta)); WHILE EXISTS(SELECT * FROM items) DO SET @id := (SELECT * FROM items LIMIT 1); DELETE FROM items WHERE (idCultura = @id); CALL `Create_Alerta`(@id, new.idMedicao , 'PERIGO', 'ASD'); END WHILE; END IF; IF @tipo = 'L' THEN INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.lumLimInfAlerta OR new.valorMedicao>=cultura.lumLimSupAlerta)); WHILE EXISTS(SELECT * FROM items) DO SET @id := (SELECT * FROM items LIMIT 1); DELETE FROM items WHERE (idCultura = @id); CALL `Create_Alerta`(@id, new.idMedicao , 'PERIGO', 'ASD'); END WHILE; END IF; END";
-            statementLocalhost.executeUpdate(createAlertaTrigger);
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
@@ -210,9 +285,10 @@ END
 
 
 
+TRIGGEEEEEER limites
 
 
-
+DELIMITER // DROP TRIGGER IF EXISTS `valor_invalido`// CREATE DEFINER=`root`@`localhost` TRIGGER `valor_invalido` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN DECLARE nInvalidos integer; SELECT COUNT(*) into nInvalidos FROM sensor, medicao WHERE sensor.idSensor=new.idSensor AND (sensor.limiteSup<new.valorMedicao OR sensor.limiteInf>new.valorMedicao); IF nInvalidos>0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido recusado!'; END IF; END// DELIMITER ;
 
 
 
