@@ -25,24 +25,23 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 public class MongoToCloud extends Thread implements MqttCallback {
     MqttClient mqttclient;
 
-    static String cloud_server = new String();
-    static String cloud_topic = new String();
+    private String cloud_server ;
+    private String cloud_topic ;
 
-    static String mongo_user = new String();
-    static String mongo_password = new String();
-    static String mongo_replica = new String();
-    static String mongo_address = new String();
-    static String mongo_database = new String();
-    static String mongo_collection = new String();
-    static String mongo_fieldquery = new String();
-    static String mongo_fieldvalue = new String();
-    static String delete_document = new String();
-    static String loop_query = new String();
-    static String create_backup = new String();
-    static String backup_collection = new String();
-    static String display_documents = new String();
-    static String seconds_wait = new String();
-    static String mongo_authentication = new String();
+    private String mongo_user ;
+    private String mongo_password;
+    private String mongo_replica;
+    private String mongo_address ;
+    private String mongo_database ;
+    private String mongo_collection ;
+    //static String mongo_fieldquery = new String();
+    //static String mongo_fieldvalue = new String();
+    private String delete_document;
+    private String create_backup;
+    private String backup_collection;
+    private String display_documents;
+    private String seconds_wait;
+    private String mongo_authentication;
 
     public MongoToCloud(String collection, String topic){
         try {
@@ -57,18 +56,17 @@ public class MongoToCloud extends Thread implements MqttCallback {
         mongo_password = properties.getProperty("mongo_password");
         mongo_authentication = properties.getProperty("mongo_authentication");
         mongo_replica = properties.getProperty("mongo_replica");
-        mongo_fieldquery = properties.getProperty("mongo_fieldquery");
-        mongo_fieldvalue = properties.getProperty("mongo_fieldvalue");
+        //mongo_fieldquery = properties.getProperty("mongo_fieldquery");
+        //mongo_fieldvalue = properties.getProperty("mongo_fieldvalue");
         delete_document = properties.getProperty("delete_document");
         create_backup = properties.getProperty("create_backup");
         backup_collection = properties.getProperty("backup_collection");
         seconds_wait = properties.getProperty("delay");
-        loop_query = properties.getProperty("loop_query");
         display_documents = properties.getProperty("display_documents");
 
-    } catch (Exception properties) {
-        System.out.println("Error reading MongoToCloud.ini file " + properties);
-    }
+        } catch (Exception properties) {
+            System.out.println("Error reading MongoToCloud.ini file " + properties);
+        }
     }
 
     protected String getSaltString() {
@@ -127,9 +125,9 @@ public class MongoToCloud extends Thread implements MqttCallback {
         //MongoCollection collectionBackup = database.getCollection(backup_collection);
         Document document = new Document();
 
-        if (!mongo_fieldquery.equals("null")) {
-            document.put(mongo_fieldquery, mongo_fieldvalue);
-        }
+        //if (!mongo_fieldquery.equals("null")) {
+        //    document.put(mongo_fieldquery, mongo_fieldvalue);
+        //}
 
         boolean isNotLooping = false;
         int idDocument = 0;
@@ -158,25 +156,22 @@ public class MongoToCloud extends Thread implements MqttCallback {
                 this.writeSensor(dadosJson);
                 if (!seconds_wait.equals("0")) {
                     try {
-                        Thread.sleep((long)Integer.parseInt(seconds_wait));
+                        sleep(Integer.parseInt(seconds_wait));
                     } catch (Exception e1) {
                     }
                 }
             }
 
-            if (delete_document.equals("true")) {
-                if (!mongo_fieldquery.equals("null")) {
-                    collection.deleteMany(Filters.eq(mongo_fieldquery, mongo_fieldvalue));
-                }
+            //if (delete_document.equals("true")) {
+            //    if (!mongo_fieldquery.equals("null")) {
+            //        collection.deleteMany(Filters.eq(mongo_fieldquery, mongo_fieldvalue));
+            //    }
 
-                if (mongo_fieldquery.equals("null")) {
-                    database.getCollection(mongo_collection).drop();
-                }
-            }
+            //    if (mongo_fieldquery.equals("null")) {
+            //        database.getCollection(mongo_collection).drop();
+            //    }
+            //}
 
-            if (!loop_query.equals("true")) {
-                isNotLooping = true;
-            }
         }
 
     }

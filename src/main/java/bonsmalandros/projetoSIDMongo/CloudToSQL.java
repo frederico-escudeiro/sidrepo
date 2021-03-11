@@ -17,8 +17,11 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class CloudToSQL extends Thread implements MqttCallback {
     MqttClient mqttclient;
-    static String cloud_server = new String();
-    static String cloud_topic = new String();
+    private String cloud_server = new String();
+    private String cloud_topic = new String();
+    private char tipoDoSensor;
+    private int idZona;
+
 
 
     public CloudToSQL(String topic) {
@@ -27,6 +30,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
             var1.load(new FileInputStream("CloudToSQL.ini"));
             cloud_server = var1.getProperty("cloud_server");
             cloud_topic = topic;
+            tipoDoSensor = cloud_topic.substring(14).charAt(0);
+            idZona = Integer.parseInt(cloud_topic.substring(15));
         } catch (Exception e) {
             System.out.println("Error reading CloudToSQL.ini file " + e);
         }
