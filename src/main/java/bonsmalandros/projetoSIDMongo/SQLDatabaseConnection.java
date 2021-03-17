@@ -61,7 +61,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaAlerta() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(50) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL,  `intervaloMinimoAvisos` TIME NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(50) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-cultura` FOREIGN KEY (`idCultura`) REFERENCES `cultura`(`idCultura`) ON DELETE CASCADE ON UPDATE CASCADE;";
         String addForeignKey2 = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-medicao` FOREIGN KEY (`idMedicao`) REFERENCES `medicao`(`idMedicao`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
@@ -70,7 +70,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaCultura() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`cultura` ( `idCultura` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `nomeCultura` VARCHAR(50) NOT NULL ,  `idUtilizador` INT ,  `idZona` INT NOT NULL ,  `lumLimSup` DOUBLE NOT NULL ,  `lumLimInf` DOUBLE NOT NULL ,  `tempLimSup` DOUBLE NOT NULL ,  `tempLimInf` DOUBLE NOT NULL ,  `humLimSup` DOUBLE NOT NULL ,  `humLimInf` DOUBLE NOT NULL,  `lumLimSupAlerta` DOUBLE NOT NULL ,  `lumLimInfAlerta` DOUBLE NOT NULL ,  `tempLimSupAlerta` DOUBLE NOT NULL ,  `tempLimInfAlerta` DOUBLE NOT NULL ,  `humLimSupAlerta` DOUBLE NOT NULL ,  `humLimInfAlerta` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`cultura` ( `idCultura` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `nomeCultura` VARCHAR(50) NOT NULL ,  `idUtilizador` INT ,  `idZona` INT NOT NULL ,  `isValid` BOOLEAN NOT NULL ,  `lumLimSup` DOUBLE NULL ,  `lumLimInf` DOUBLE NULL ,  `tempLimSup` DOUBLE NULL ,  `tempLimInf` DOUBLE NULL ,  `humLimSup` DOUBLE NULL ,  `humLimInf` DOUBLE NULL,  `lumLimSupAlerta` DOUBLE NULL ,  `lumLimInfAlerta` DOUBLE NULL ,  `tempLimSupAlerta` DOUBLE NULL ,  `tempLimInfAlerta` DOUBLE NULL ,  `humLimSupAlerta` DOUBLE NULL ,  `humLimInfAlerta` DOUBLE NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `cultura` ADD  CONSTRAINT `cultura-utilizador` FOREIGN KEY (`idUtilizador`) REFERENCES `utilizador`(`idUtilizador`) ON DELETE SET NULL ON UPDATE CASCADE;";
         String addForeignKey2 = "ALTER TABLE `cultura` ADD  CONSTRAINT `cultura-zona` FOREIGN KEY (`idZona`) REFERENCES `zona`(`idZona`) ON DELETE CASCADE ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
@@ -134,7 +134,7 @@ public class SQLDatabaseConnection {
             String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `create_alerta`";
             String createAlertaProcedure = "CREATE PROCEDURE `create_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END;";
             statementLocalhost.executeUpdate(dropProcedimentoAlerta);
-            statementLocalhost.executeUpdate(createAlertaProcedure);
+            statementLocalhost.execute(createAlertaProcedure);
 
             //criar procedimento da medicao
             String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `create_medicao`";
@@ -241,10 +241,10 @@ public class SQLDatabaseConnection {
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
 
-            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10');";
-            statementLocalhost.executeUpdate(insertCultura);
-            String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES ('1', current_timestamp(), '2');";
-            statementLocalhost.executeUpdate(insertMedicao);
+            //String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10');";
+            //statementLocalhost.executeUpdate(insertCultura);
+            //String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES ('1', current_timestamp(), '2');";
+            //statementLocalhost.executeUpdate(insertMedicao);
             //String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `intervaloMinimoAvisos`) VALUES ('1', '1', 'PERIGO', 'asd', '20');\n";
             //statementLocalhost.executeUpdate(insertAlerta);
 
@@ -292,7 +292,7 @@ DELIMITER // DROP TRIGGER IF EXISTS `valor_invalido`// CREATE DEFINER=`root`@`lo
 
 
 
-
+DELIMITER // DROP TRIGGER IF EXISTS `valor_invalido`// CREATE DEFINER=`root`@`localhost` TRIGGER `valor_invalido` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN DECLARE nInvalidos integer; SELECT COUNT(*) into nInvalidos FROM sensor, medicao WHERE sensor.idSensor=new.idSensor AND (sensor.limiteSup<new.valorMedicao OR sensor.limiteInf>new.valorMedicao); IF nInvalidos>0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido recusado!'; END IF; END// DELIMITER ;
 
 
 
