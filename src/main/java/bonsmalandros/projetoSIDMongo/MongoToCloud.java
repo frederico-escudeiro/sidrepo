@@ -1,6 +1,5 @@
 package bonsmalandros.projetoSIDMongo;
 import com.mongodb.DBCollection;
-import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
@@ -23,52 +22,52 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class MongoToCloud extends Thread implements MqttCallback {
-    MqttClient mqttclient;
+    private MqttClient mqttclient;
 
-    static String cloud_server = new String();
-    static String cloud_topic = new String();
+    private String cloud_server;
+    private String cloud_topic;
 
-    static String mongo_user = new String();
-    static String mongo_password = new String();
-    static String mongo_replica = new String();
-    static String mongo_address = new String();
-    static String mongo_database = new String();
-    static String mongo_collection = new String();
-    static String mongo_fieldquery = new String();
-    static String mongo_fieldvalue = new String();
-    static String delete_document = new String();
-    static String loop_query = new String();
-    static String create_backup = new String();
-    static String backup_collection = new String();
-    static String display_documents = new String();
-    static String seconds_wait = new String();
-    static String mongo_authentication = new String();
+    private String mongo_user;
+    private String mongo_password;
+    private String mongo_replica;
+    private String mongo_address;
+    private String mongo_database;
+    private String mongo_collection;
+    //String mongo_fieldquery;
+    //String mongo_fieldvalue;
+    private String delete_document;
+    private String loop_query;
+    private String create_backup;
+    private String backup_collection;
+    private String display_documents;
+    private String seconds_wait;
+    private String mongo_authentication;
 
     public MongoToCloud(String collection, String topic){
         try {
-        Properties properties = new Properties();
-        properties.load(new FileInputStream("MongoToCloud.ini"));
-        cloud_server = properties.getProperty("cloud_server");
-        cloud_topic = topic;
-        mongo_address = properties.getProperty("mongo_address");
-        mongo_database = properties.getProperty("mongo_database");
-        mongo_collection = collection;
-        mongo_user = properties.getProperty("mongo_user");
-        mongo_password = properties.getProperty("mongo_password");
-        mongo_authentication = properties.getProperty("mongo_authentication");
-        mongo_replica = properties.getProperty("mongo_replica");
-        mongo_fieldquery = properties.getProperty("mongo_fieldquery");
-        mongo_fieldvalue = properties.getProperty("mongo_fieldvalue");
-        delete_document = properties.getProperty("delete_document");
-        create_backup = properties.getProperty("create_backup");
-        backup_collection = properties.getProperty("backup_collection");
-        seconds_wait = properties.getProperty("delay");
-        loop_query = properties.getProperty("loop_query");
-        display_documents = properties.getProperty("display_documents");
+            Properties properties = new Properties();
+            properties.load(new FileInputStream("MongoToCloud.ini"));
+            cloud_server = properties.getProperty("cloud_server");
+            cloud_topic = topic;
+            mongo_address = properties.getProperty("mongo_address");
+            mongo_database = properties.getProperty("mongo_database");
+            mongo_collection = collection;
+            mongo_user = properties.getProperty("mongo_user");
+            mongo_password = properties.getProperty("mongo_password");
+            mongo_authentication = properties.getProperty("mongo_authentication");
+            mongo_replica = properties.getProperty("mongo_replica");
+            //mongo_fieldquery = properties.getProperty("mongo_fieldquery");
+            //mongo_fieldvalue = properties.getProperty("mongo_fieldvalue");
+            delete_document = properties.getProperty("delete_document");
+            create_backup = properties.getProperty("create_backup");
+            backup_collection = properties.getProperty("backup_collection");
+            seconds_wait = properties.getProperty("delay");
+            loop_query = properties.getProperty("loop_query");
+            display_documents = properties.getProperty("display_documents");
 
-    } catch (Exception properties) {
-        System.out.println("Error reading MongoToCloud.ini file " + properties);
-    }
+        } catch (Exception properties) {
+            System.out.println("Error reading MongoToCloud.ini file " + properties);
+        }
     }
 
     protected String getSaltString() {
@@ -127,9 +126,9 @@ public class MongoToCloud extends Thread implements MqttCallback {
         //MongoCollection collectionBackup = database.getCollection(backup_collection);
         Document document = new Document();
 
-        if (!mongo_fieldquery.equals("null")) {
+        /*if (!mongo_fieldquery.equals("null")) {
             document.put(mongo_fieldquery, mongo_fieldvalue);
-        }
+        }*/
 
         boolean isNotLooping = false;
         int idDocument = 0;
@@ -144,7 +143,6 @@ public class MongoToCloud extends Thread implements MqttCallback {
                 ++idDocument;
                 Document tempDocument = (Document)mongoCursor.next();
                 String dadosJson = tempDocument.toJson();
-                dadosJson = "{id:" + idDocument + ", doc:" + dadosJson + "}";
                 if (display_documents.equals("true")) {
                     System.out.println(dadosJson);
                 }
@@ -156,6 +154,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
                 */
 
                 this.writeSensor(dadosJson);
+
                 if (!seconds_wait.equals("0")) {
                     try {
                         Thread.sleep((long)Integer.parseInt(seconds_wait));
@@ -164,7 +163,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
                 }
             }
 
-            if (delete_document.equals("true")) {
+           /* if (delete_document.equals("true")) {
                 if (!mongo_fieldquery.equals("null")) {
                     collection.deleteMany(Filters.eq(mongo_fieldquery, mongo_fieldvalue));
                 }
@@ -172,7 +171,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
                 if (mongo_fieldquery.equals("null")) {
                     database.getCollection(mongo_collection).drop();
                 }
-            }
+            } */
 
             if (!loop_query.equals("true")) {
                 isNotLooping = true;
