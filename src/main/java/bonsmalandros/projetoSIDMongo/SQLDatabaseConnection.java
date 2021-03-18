@@ -35,14 +35,14 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaZona() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`zona` ( `idZona` INT NOT NULL , `temperatura` DOUBLE , `humidade` DOUBLE , `luz` DOUBLE ) ENGINE = InnoDB;";
-        String addPrimaryKey = "ALTER TABLE `zona` ADD PRIMARY KEY(`idZona`);";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`zona` ( `idZona` INT NOT NULL PRIMARY KEY, `temperatura` DOUBLE , `humidade` DOUBLE , `luz` DOUBLE ) ENGINE = InnoDB;";
+        //String addPrimaryKey = "ALTER TABLE `zona` ADD PRIMARY KEY(`idZona`);";
         statementLocalhost.executeUpdate(createTable);
-        statementLocalhost.executeUpdate(addPrimaryKey);
+        //statementLocalhost.executeUpdate(addPrimaryKey);
     }
 
     private static void createTabelaSensor() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT, `limiteSup` DOUBLE NOT NULL , `limiteInf` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT, `limiteSup` DOUBLE NOT NULL , `limiteInf` DOUBLE NOT NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `sensor` ADD  CONSTRAINT `sensor-zona` FOREIGN KEY (`idZona`) REFERENCES `zona`(`idZona`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
         statementLocalhost.executeUpdate(addForeignKey);
@@ -61,7 +61,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaAlerta() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(50) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL,  `intervaloMinimoAvisos` TIME NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(50) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-cultura` FOREIGN KEY (`idCultura`) REFERENCES `cultura`(`idCultura`) ON DELETE CASCADE ON UPDATE CASCADE;";
         String addForeignKey2 = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-medicao` FOREIGN KEY (`idMedicao`) REFERENCES `medicao`(`idMedicao`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
@@ -148,9 +148,11 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropProcedimentoCultura);
             statementLocalhost.executeUpdate(createCulturaProcedure);
 
+
+
             //criar trigger do limite de alerta
-            String dropTriggerLimiteAlerta = "DROP TRIGGER IF EXISTS `RiscoProximoDoLimite`";
-            String createAlertaTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `RiscoProximoDoLimite` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
+            String dropTriggerLimiteAlerta = "DROP TRIGGER IF EXISTS `alerta_cultura`";
+            String createAlertaTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_cultura` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
                     "DECLARE id int; \n" +
                     "DECLARE isRiscoModerado int; \n" +
                     "CREATE TEMPORARY TABLE items (idCultura int); \n" +
@@ -197,6 +199,7 @@ public class SQLDatabaseConnection {
                     "END IF;\n" +
                     "END WHILE; \n" +
                     "END IF; \n" +
+                    "DROP TEMPORARY TABLE items; \n" +
                     "END";
             statementLocalhost.executeUpdate(dropTriggerLimiteAlerta);
             statementLocalhost.executeUpdate(createAlertaTrigger);
@@ -229,15 +232,18 @@ public class SQLDatabaseConnection {
             //ler a tabela 'sensor'
             selectSqlCloud = "SELECT * FROM `sensor`";
             resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
+            int idSensor=1;
             while (resultSetCLoud.next()) {
                 //Inserir os valores na tabela 'sensor'
-                String selectSqlLocalhost = "INSERT INTO `sensor` (`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ('" +
+                String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ('" +
+                        idSensor + "', '" +
                         resultSetCLoud.getString(2) + "', '" +
                         Integer.parseInt(resultSetCLoud.getString(5)) + "', '" +
                         Double.parseDouble(resultSetCLoud.getString(4)) + "', '" +
                         Double.parseDouble(resultSetCLoud.getString(3)) + "') " +
                         "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`), " +
                         "`limiteSup`=VALUES(`limiteSup`), `limiteInf`=VALUES(`limiteInf`)";
+                idSensor++;
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
 
@@ -245,10 +251,11 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(insertCultura);
             String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES ('1', current_timestamp(), '2');";
             statementLocalhost.executeUpdate(insertMedicao);
-            //String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `intervaloMinimoAvisos`) VALUES ('1', '1', 'PERIGO', 'asd', '20');\n";
-            //statementLocalhost.executeUpdate(insertAlerta);
+            String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');\n";
+            statementLocalhost.executeUpdate(insertAlerta);
 
-
+            String procedMedicaoInsert ="CALL `create_medicao`('3', '2021-03-11 16:29:47', '6');";
+            statementLocalhost.executeUpdate(procedMedicaoInsert);
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
