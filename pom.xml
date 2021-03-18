@@ -41,22 +41,10 @@
         <version>4.2.2</version>
     </dependency>
     <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-legacy</artifactId>
-      <version>4.2.1</version>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.23</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3 -->
-    <dependency>
-      <groupId>org.eclipse.paho</groupId>
-      <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-      <version>1.2.5</version>
-    </dependency>
-
-  <dependency>
-    <groupId>mysql</groupId>
-    <artifactId>mysql-connector-java</artifactId>
-    <version>8.0.23</version>
-  </dependency>
 
   </dependencies>
 
@@ -103,5 +91,4 @@
       </plugins>
     </pluginManagement>
   </build>
-
 </project>
