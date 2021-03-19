@@ -299,13 +299,23 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(procedMedicaoInsert);
 
 
-            //Criar roles
+            //Criar ROLE investigador
             String dropRoleInvestigador = "DROP ROLE IF EXISTS `investigador`;";
             String createInvestigador = "CREATE ROLE investigador;";
             String privilegiosInvestigador = "GRANT SELECT, UPDATE (`lumLimInf`, `lumLimSup`, `tempLimInf`, `tempLimSup`, `humLimInf`, `humLimSup`, `lumLimInfAlerta`, `lumLimSupAlerta`, `tempLimInfAlerta`, `tempLimSupAlerta`, `humLimInfAlerta`, `humLimSupAlerta`) ON  `sid2021`.`cultura` TO 'investigador'@''";
             statementLocalhost.executeUpdate(dropRoleInvestigador);
             statementLocalhost.executeUpdate(createInvestigador);
             statementLocalhost.executeUpdate(privilegiosInvestigador);
+
+            //Criar ROLE administrador
+            String dropRoleAdmin = "DROP ROLE IF EXISTS `administrador`;";
+            String createAdmin = "CREATE ROLE administrador;";
+            String privilegiosAdminUtilizador = "GRANT SELECT, DELETE, INSERT (`nomeUtilizador`,`email`) ON  `sid2021`.`utilizador` TO 'administrador'@''";
+            String privilegiosAdminCulturas = "GRANT SELECT, DELETE, UPDATE, INSERT (`nomeCultura`,`idUtilizador`) ON `sid2021`.`cultura` TO 'administrador'@''";
+            statementLocalhost.executeUpdate(dropRoleAdmin);
+            statementLocalhost.executeUpdate(createAdmin);
+            statementLocalhost.executeUpdate(privilegiosAdminUtilizador);
+            statementLocalhost.executeUpdate(privilegiosAdminCulturas);
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
