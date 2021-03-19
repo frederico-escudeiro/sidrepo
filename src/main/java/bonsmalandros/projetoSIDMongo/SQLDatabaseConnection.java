@@ -9,6 +9,8 @@ public class SQLDatabaseConnection {
     private static Statement statementLocalhost;
     private static Statement statementCloud;
     private static final String dbName = "sid2021";
+    private static final double outlierTemperatura = 1.0;
+
 
     private static boolean databaseExists() throws SQLException {
         ResultSet resultSet = connectionLocalhost.getMetaData().getCatalogs();
@@ -70,7 +72,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaCultura() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`cultura` ( `idCultura` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `nomeCultura` VARCHAR(50) NOT NULL ,  `idUtilizador` INT ,  `idZona` INT NOT NULL ,  `lumLimSup` DOUBLE NOT NULL ,  `lumLimInf` DOUBLE NOT NULL ,  `tempLimSup` DOUBLE NOT NULL ,  `tempLimInf` DOUBLE NOT NULL ,  `humLimSup` DOUBLE NOT NULL ,  `humLimInf` DOUBLE NOT NULL,  `lumLimSupAlerta` DOUBLE NOT NULL ,  `lumLimInfAlerta` DOUBLE NOT NULL ,  `tempLimSupAlerta` DOUBLE NOT NULL ,  `tempLimInfAlerta` DOUBLE NOT NULL ,  `humLimSupAlerta` DOUBLE NOT NULL ,  `humLimInfAlerta` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`cultura` ( `idCultura` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `nomeCultura` VARCHAR(50) NOT NULL ,  `idUtilizador` INT ,  `idZona` INT NOT NULL ,  `lumLimSup` DOUBLE NULL ,  `lumLimInf` DOUBLE NULL ,  `tempLimSup` DOUBLE NULL ,  `tempLimInf` DOUBLE NULL ,  `humLimSup` DOUBLE NULL ,  `humLimInf` DOUBLE NULL,  `lumLimSupAlerta` DOUBLE NULL ,  `lumLimInfAlerta` DOUBLE NULL ,  `tempLimSupAlerta` DOUBLE NULL ,  `tempLimInfAlerta` DOUBLE NULL ,  `humLimSupAlerta` DOUBLE NULL ,  `humLimInfAlerta` DOUBLE NULL, `isValido` BOOLEAN NOT NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `cultura` ADD  CONSTRAINT `cultura-utilizador` FOREIGN KEY (`idUtilizador`) REFERENCES `utilizador`(`idUtilizador`) ON DELETE SET NULL ON UPDATE CASCADE;";
         String addForeignKey2 = "ALTER TABLE `cultura` ADD  CONSTRAINT `cultura-zona` FOREIGN KEY (`idZona`) REFERENCES `zona`(`idZona`) ON DELETE CASCADE ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
@@ -144,10 +146,15 @@ public class SQLDatabaseConnection {
 
             //criar procedimento da cultura
             String dropProcedimentoCultura = "DROP PROCEDURE IF EXISTS `create_cultura`";
-            String createCulturaProcedure = "CREATE PROCEDURE `create_cultura`(IN `nomeCultura` VARCHAR(50), IN `idUtilizador` INT, IN `idZona` INT, IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (nomeCultura, idUtilizador, idZona, lumLimSup, lumLimInf, tempLimSup, tempLimInf, humLimSup, humLimInf, lumLimSupAlerta, lumLimInfAlerta, tempLimSupAlerta, tempLimInfAlerta, humLimSupAlerta, humLimInfAlerta); END";
+            String createCulturaProcedure = "CREATE PROCEDURE `create_cultura`(IN `nomeCultura` VARCHAR(50), IN `idUtilizador` INT, IN `idZona` INT, IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (nomeCultura, idUtilizador, idZona, lumLimSup, lumLimInf, tempLimSup, tempLimInf, humLimSup, humLimInf, lumLimSupAlerta, lumLimInfAlerta, tempLimSupAlerta, tempLimInfAlerta, humLimSupAlerta, humLimInfAlerta, 0); END";
             statementLocalhost.executeUpdate(dropProcedimentoCultura);
             statementLocalhost.executeUpdate(createCulturaProcedure);
 
+            //criar procedimento dos username
+            String dropProcedimentoUtilizador = "DROP PROCEDURE IF EXISTS `create_user`";
+            String createUtilizadorProcedure= "CREATE DEFINER=`root`@`localhost` PROCEDURE `create_user`(IN `username` VARCHAR(50), IN `pwd` VARCHAR(50)) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SET @sql := CONCAT('CREATE USER ''', username, '''@''localhost''', ' IDENTIFIED BY ''', pwd, ''''); PREPARE stmt FROM @sql; EXECUTE stmt; SET @perm := concat('GRANT ALL PRIVILEGES ON sid2021.* TO ''',username,'''@''localhost'''); PREPARE grnt FROM @perm; EXECUTE grnt; END";
+            statementLocalhost.executeUpdate(dropProcedimentoUtilizador);
+            statementLocalhost.executeUpdate(createUtilizadorProcedure);
 
 
             //criar trigger do limite de alerta
@@ -211,6 +218,40 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropTriggerValorInvalido);
             statementLocalhost.executeUpdate(createForaDoLimiteTrigger);
 
+            //criar trigger para outliers
+            String dropTriggerOutlierTemp = "DROP TRIGGER IF EXISTS `outlier_temp`";
+            String createOutlierTempTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `outlier_temp` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN\n" +
+                    "\n" +
+                    "CREATE TEMPORARY TABLE vetor (valorMedicao double); \n" +
+                    "\n" +
+                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\n" +
+                    "\n" +
+                    "SET @ultimaMedicao := (SELECT medicao.tempo FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 1);\n" +
+                    "\n" +
+                    "IF @tipo = 'T' AND (SELECT TIMESTAMPDIFF(MINUTE, @ultimaMedicao,new.tempo))<5 THEN\n" +
+                    "INSERT INTO vetor (SELECT DISTINCT valorMedicao FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 5);\n" +
+                    "\n" +
+                    "\n" +
+                    "\n" +
+                    "SET @menorValor := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 0,1);\n" +
+                    "\n" +
+                    "SET @mediana := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 2,1);\n" +
+                    "\n" +
+                    "SET @maiorValor := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 4,1);\n" +
+                    "\n" +
+                    "IF (SELECT COUNT(*) FROM vetor)>4 THEN\n" +
+                    "\t\tSET @limiteInf := (@mediana - @menorValor +"+ outlierTemperatura +");\n" +
+                    "        SET @limiteSup := (@maiorValor - @mediana +"+ outlierTemperatura +");\n" +
+                    "        IF (new.valorMedicao<(@mediana-@limiteInf) OR new.valorMedicao>(@mediana+@limiteSup)) THEN \n" +
+                    "\t\t\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Outlier Detetado!'; \n" +
+                    "\t\tEND IF;\n" +
+                    "END IF;\n" +
+                    "END IF;\n" +
+                    "DROP TEMPORARY TABLE vetor;\n" +
+                    "END";
+            statementLocalhost.executeUpdate(dropTriggerOutlierTemp);
+            statementLocalhost.executeUpdate(createOutlierTempTrigger);
+
 
             //Ler a tabela 'zona'
             String selectSqlCloud = "SELECT * FROM `zona`";
@@ -247,7 +288,7 @@ public class SQLDatabaseConnection {
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
 
-            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10');";
+            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10', '1');";
             statementLocalhost.executeUpdate(insertCultura);
             String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES ('1', current_timestamp(), '2');";
             statementLocalhost.executeUpdate(insertMedicao);
@@ -256,6 +297,15 @@ public class SQLDatabaseConnection {
 
             String procedMedicaoInsert ="CALL `create_medicao`('3', '2021-03-11 16:29:47', '6');";
             statementLocalhost.executeUpdate(procedMedicaoInsert);
+
+
+            //Criar roles
+            String dropRoleInvestigador = "DROP ROLE IF EXISTS `investigador`;";
+            String createInvestigador = "CREATE ROLE investigador;";
+            String privilegiosInvestigador = "GRANT SELECT, UPDATE (`lumLimInf`, `lumLimSup`, `tempLimInf`, `tempLimSup`, `humLimInf`, `humLimSup`, `lumLimInfAlerta`, `lumLimSupAlerta`, `tempLimInfAlerta`, `tempLimSupAlerta`, `humLimInfAlerta`, `humLimSupAlerta`) ON  `sid2021`.`cultura` TO 'investigador'@''";
+            statementLocalhost.executeUpdate(dropRoleInvestigador);
+            statementLocalhost.executeUpdate(createInvestigador);
+            statementLocalhost.executeUpdate(privilegiosInvestigador);
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
