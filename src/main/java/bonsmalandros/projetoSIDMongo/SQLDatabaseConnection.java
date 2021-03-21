@@ -58,7 +58,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaUtilizador() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`utilizador` ( `idUtilizador` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `nomeUtilizador` VARCHAR(100) NOT NULL ,  `adminApp` BOOLEAN NOT NULL ,  `email` VARCHAR(50) ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`utilizador` ( `idUtilizador` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `nomeUtilizador` VARCHAR(100) NOT NULL ,  `email` VARCHAR(50) UNIQUE, `adminApp` BOOLEAN NOT NULL) ENGINE = InnoDB;";
         statementLocalhost.executeUpdate(createTable);
     }
 
@@ -150,9 +150,15 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropProcedimentoCultura);
             statementLocalhost.executeUpdate(createCulturaProcedure);
 
-            //criar procedimento dos username
+            //criar procedimento da cultura
+            String dropProcedimentoCulturaAdmin = "DROP PROCEDURE IF EXISTS `create_cultura_admin`";
+            String createCulturaProcedureAdmin = "CREATE PROCEDURE `create_cultura_admin`(IN `nomeCultura` VARCHAR(50), IN `idUtilizador` INT, IN `idZona` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (nomeCultura, idUtilizador, idZona, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0); END";
+            statementLocalhost.executeUpdate(dropProcedimentoCulturaAdmin);
+            statementLocalhost.executeUpdate(createCulturaProcedureAdmin);
+
+            //criar procedimento do user
             String dropProcedimentoUtilizador = "DROP PROCEDURE IF EXISTS `create_user`";
-            String createUtilizadorProcedure= "CREATE DEFINER=`root`@`localhost` PROCEDURE `create_user`(IN `username` VARCHAR(50), IN `pwd` VARCHAR(50)) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SET @sql := CONCAT('CREATE USER ''', username, '''@''localhost''', ' IDENTIFIED BY ''', pwd, ''''); PREPARE stmt FROM @sql; EXECUTE stmt; SET @perm := concat('GRANT ALL PRIVILEGES ON sid2021.* TO ''',username,'''@''localhost'''); PREPARE grnt FROM @perm; EXECUTE grnt; END";
+            String createUtilizadorProcedure= "CREATE DEFINER=`root`@`localhost` PROCEDURE `create_user`(IN `username` VARCHAR(50), IN `email` VARCHAR(50), IN `pwd` VARCHAR(50), IN `isAdmin` BOOLEAN) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SET @sql := CONCAT('CREATE USER ''', email, '''@''localhost''', ' IDENTIFIED BY ''', pwd, ''''); PREPARE stmt FROM @sql; EXECUTE stmt; SET @perm := concat('GRANT ALL PRIVILEGES ON sid2021.* TO ''',email,'''@''localhost'''); INSERT INTO `utilizador` (`nomeUtilizador`, `adminApp`,`email`) VALUES (username, isAdmin ,email); CASE WHEN isAdmin = 0 THEN SET @perm := concat('GRANT investigador TO ''',email,'''@''localhost'''); WHEN isAdmin = 1 THEN SET @perm := concat('GRANT administrador TO ''',email,'''@''localhost'''); END CASE; PREPARE grnt FROM @perm; EXECUTE grnt; END";
             statementLocalhost.executeUpdate(dropProcedimentoUtilizador);
             statementLocalhost.executeUpdate(createUtilizadorProcedure);
 
@@ -228,7 +234,7 @@ public class SQLDatabaseConnection {
                     "\n" +
                     "SET @ultimaMedicao := (SELECT medicao.tempo FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 1);\n" +
                     "\n" +
-                    "IF @tipo = 'T' AND (SELECT TIMESTAMPDIFF(MINUTE, @ultimaMedicao,new.tempo))<5 THEN\n" +
+                    "IF @tipo = 'T' AND (SELECT TIMESTAMPDIFF(SECOND, @ultimaMedicao,new.tempo))<10 THEN\n" +
                     "INSERT INTO vetor (SELECT DISTINCT valorMedicao FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 5);\n" +
                     "\n" +
                     "\n" +
@@ -292,7 +298,7 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(insertCultura);
             String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`) VALUES ('1', current_timestamp(), '2');";
             statementLocalhost.executeUpdate(insertMedicao);
-            String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');\n";
+            String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');";
             statementLocalhost.executeUpdate(insertAlerta);
 
             String procedMedicaoInsert ="CALL `create_medicao`('3', '2021-03-11 16:29:47', '6');";
@@ -302,20 +308,26 @@ public class SQLDatabaseConnection {
             //Criar ROLE investigador
             String dropRoleInvestigador = "DROP ROLE IF EXISTS `investigador`;";
             String createInvestigador = "CREATE ROLE investigador;";
-            String privilegiosInvestigador = "GRANT SELECT, UPDATE (`lumLimInf`, `lumLimSup`, `tempLimInf`, `tempLimSup`, `humLimInf`, `humLimSup`, `lumLimInfAlerta`, `lumLimSupAlerta`, `tempLimInfAlerta`, `tempLimSupAlerta`, `humLimInfAlerta`, `humLimSupAlerta`) ON  `sid2021`.`cultura` TO 'investigador'@''";
+            String grantSelectInvest = "GRANT USAGE ON  sid2021.* TO 'investigador'@''";
+            String privilegiosInvestigador = "GRANT UPDATE (`lumLimInf`, `lumLimSup`, `tempLimInf`, `tempLimSup`, `humLimInf`, `humLimSup`, `lumLimInfAlerta`, `lumLimSupAlerta`, `tempLimInfAlerta`, `tempLimSupAlerta`, `humLimInfAlerta`, `humLimSupAlerta`) ON  `sid2021`.`cultura` TO 'investigador'@''";
             statementLocalhost.executeUpdate(dropRoleInvestigador);
             statementLocalhost.executeUpdate(createInvestigador);
+            //statementLocalhost.executeUpdate(grantSelectInvest);
             statementLocalhost.executeUpdate(privilegiosInvestigador);
 
             //Criar ROLE administrador
             String dropRoleAdmin = "DROP ROLE IF EXISTS `administrador`;";
             String createAdmin = "CREATE ROLE administrador;";
-            String privilegiosAdminUtilizador = "GRANT SELECT, DELETE, INSERT (`nomeUtilizador`,`email`) ON  `sid2021`.`utilizador` TO 'administrador'@''";
-            String privilegiosAdminCulturas = "GRANT SELECT, DELETE, UPDATE, INSERT (`nomeCultura`,`idUtilizador`) ON `sid2021`.`cultura` TO 'administrador'@''";
+            String grantSelectAdmin = "GRANT USAGE ON  sid2021.* TO 'administrador'@''";
+            String privilegiosAdminUtilizador = "GRANT DELETE, INSERT (`nomeUtilizador`,`email`) ON  `sid2021`.`utilizador` TO 'administrador'@''";
+            String privilegiosAdminCulturas = "GRANT DELETE, UPDATE (`idUtilizador`), INSERT (`nomeCultura`,`idUtilizador`) ON `sid2021`.`cultura` TO 'administrador'@''";
             statementLocalhost.executeUpdate(dropRoleAdmin);
             statementLocalhost.executeUpdate(createAdmin);
+            //statementLocalhost.executeUpdate(grantSelectAdmin);
             statementLocalhost.executeUpdate(privilegiosAdminUtilizador);
             statementLocalhost.executeUpdate(privilegiosAdminCulturas);
+
+
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
