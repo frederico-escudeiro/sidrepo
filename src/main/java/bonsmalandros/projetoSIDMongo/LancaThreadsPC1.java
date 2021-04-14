@@ -6,11 +6,13 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
 import org.eclipse.paho.client.mqttv3.*;
 
+import java.lang.invoke.StringConcatFactory;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class LancaThreadsPC1 implements MqttCallback{
-    private List<MongoToCloud> lisThreads ;
+    private List<MongoToCloud> listThreads = new ArrayList<>();
 
     LancaThreadsPC1(String topicos){
         try {
@@ -19,7 +21,7 @@ public class LancaThreadsPC1 implements MqttCallback{
             String tempServer = "tcp://broker.mqtt-dashboard.com:1883";
 
             int randomNum = (new Random()).nextInt(100000);
-            MqttClient mqttclient = new MqttClient(tempServer, "CloudToSQL_" + randomNum + "_" + tempTopic);
+            MqttClient mqttclient = new MqttClient(tempServer, "LancaThreadsPC1_" + randomNum + "_" + tempTopic);
             mqttclient.connect();
             mqttclient.setCallback(this);
             mqttclient.subscribe(tempTopic);
@@ -34,21 +36,34 @@ public class LancaThreadsPC1 implements MqttCallback{
     }
 
     public void startThreads(Iterable <String> listCollections){
-        String topic;
-        try {
-            for(String collection: listCollections){
-                topic = "sid_g4_aaedfj_" + collection.substring(6);
-                System.out.println(topic);
-                MongoToCloud m2c = new MongoToCloud(collection,topic);
-                lisThreads.add(m2c);
-                m2c.connectToBroker();
-                m2c.start();
-            }
-        for(MongoToCloud m2c : lisThreads){
-            m2c.join();
-        }
-        }catch(InterruptedException e){
-            System.out.println("Interrompidas as Threads");
+        String topic = "";
+//        try {
+////            for(String collection: listCollections){
+////                topic = "sid_g4_aaedfj_" + collection.substring(6);
+////                System.out.println(topic);
+////                MongoToCloud m2c = new MongoToCloud(collection,topic);
+////                listThreads.add(m2c);
+////                m2c.connectToBroker();
+////                m2c.start();
+////            }
+////        for(MongoToCloud m2c : listThreads){
+////            m2c.join();
+////        }
+//        }catch(InterruptedException e){
+//            System.out.println("Interrompidas as Threads");
+//        }
+        int i =1;
+        for(String collection: listCollections){
+        	  
+        	if(i==1) {
+	        topic = "sid_g4_aaedfj_" + collection.substring(6);
+	        System.out.println(topic);
+	        MongoToCloud m2c = new MongoToCloud(collection,topic);
+	        listThreads.add(m2c);
+	        m2c.connectToBroker();
+	        m2c.start();
+	        i++;
+        	}
         }
     }
 

@@ -81,15 +81,15 @@ public class App
         //LeituraMedicoes t1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_t1,uri_local,db_name_local,col_name_local_t1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
         //LeituraMedicoes t2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_t2,uri_local,db_name_local,col_name_local_t2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
         //LeituraMedicoes l1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_l1,uri_local,db_name_local,col_name_local_l1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
-        LeituraMedicoes l2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_l2,uri_local,db_name_local,col_name_local_l2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
+        //LeituraMedicoes l2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_l2,uri_local,db_name_local,col_name_local_l2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
         //LeituraMedicoes h1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_h1,uri_local,db_name_local,col_name_local_h1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
-        //LeituraMedicoes h2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_h2,uri_local,db_name_local,col_name_local_h2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
+        LeituraMedicoes h2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_h2,uri_local,db_name_local,col_name_local_h2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
         
         //t1.start();
     	//t2.start();
     	//l1.start();
-    	l2.start();
+    	//l2.start();
     	//h1.start();
-    	//h2.start();
+    	h2.start();
     }
 }

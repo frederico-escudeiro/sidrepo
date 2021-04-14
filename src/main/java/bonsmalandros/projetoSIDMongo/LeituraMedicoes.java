@@ -266,7 +266,7 @@ public class LeituraMedicoes extends Thread{
    	 	startTime = System.nanoTime();
    	 	long timeMillis = (new Date()).getTime() - timeKeepMilliSeconds - timeDifMilliSeconds;
     	Bson queryFilter_clean = Filters.lt("Tempo",new Date(timeMillis));
-    	long numDocs = mongoColLocal.count(queryFilter_clean);
+    	long numDocs = mongoColLocal.countDocuments(queryFilter_clean);
     	endTime = System.nanoTime();
     	countDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Pesquisa de dados antigos");
     	numOfDeletesMessage = "Numero de documentos a remover: " + 0 + "\n";

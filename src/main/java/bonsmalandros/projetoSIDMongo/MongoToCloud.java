@@ -27,6 +27,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 
     private String cloud_server;
     private String cloud_topic;
+    private String client_name = "sid_2021_aadefj"; 
 
     private String mongo_user;
     private String mongo_password;
@@ -84,7 +85,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 
     public void connectToBroker() {
         try {
-            mqttclient = new MqttClient(cloud_server, "MongoToCloud" + this.getSaltString() + cloud_topic);
+            mqttclient = new MqttClient(cloud_server, "MongoToCloud_" + this.client_name + cloud_topic);
             mqttclient.connect();
             mqttclient.setCallback(this);
             System.out.println("Connection To Cloud Suceeded");
@@ -171,7 +172,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
             for(Document doc : listDocuments ){
                 String var1 = doc.toJson();
                 MqttMessage message = new MqttMessage();
-                message.setQos(1);
+                message.setQos(0);
                 message.setPayload(var1.getBytes());
                 mqttclient.publish(cloud_topic, message);
                 System.out.println("Documento : " +var1 );
