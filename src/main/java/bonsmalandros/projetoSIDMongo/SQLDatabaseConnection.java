@@ -157,41 +157,41 @@ public class SQLDatabaseConnection {
             String createCulturaProcedureAdmin = "CREATE PROCEDURE `create_cultura_admin`(IN `nomeCultura` VARCHAR(50), IN `idUtilizador` INT, IN `idZona` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (nomeCultura, idUtilizador, idZona, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0); END";
             statementLocalhost.executeUpdate(dropProcedimentoCulturaAdmin);
             statementLocalhost.executeUpdate(createCulturaProcedureAdmin);
+            {
+                //criar procedimento do user
+                String dropProcedimentoUtilizador = "DROP PROCEDURE IF EXISTS `create_user`";
+                String createUtilizadorProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `create_user`(IN `username` VARCHAR(50), IN `email` VARCHAR(50), IN `pwd` VARCHAR(50), IN `tipoUtilizador` CHAR(1)) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN\n" +
+                        "\n" +
+                        "IF tipoUtilizador = 'A' or tipoUtilizador = 'I' THEN\n" +
+                        "SET @user := CONCAT('CREATE USER ''', email, '''@''localhost''', ' IDENTIFIED BY ''', pwd, '''');\n" +
+                        "PREPARE stmt FROM @user; \n" +
+                        "EXECUTE stmt;\n" +
+                        "CASE \n" +
+                        "WHEN tipoUtilizador = 'I' THEN \n" +
+                        "\tSET @perm := concat('GRANT investigador TO ''',email,'''@''localhost''');\n" +
+                        "    SET @setrole := concat('SET DEFAULT ROLE investigador FOR ''',email,'''@''localhost''');\n" +
+                        "WHEN tipoUtilizador = 'A' THEN \n" +
+                        "\tSET @perm := concat('GRANT administrador TO ''',email,'''@''localhost''');\n" +
+                        "    SET @setrole := concat('SET DEFAULT ROLE administrador FOR ''',email,'''@''localhost''');\n" +
+                        "END CASE; \n" +
+                        "\n" +
+                        "PREPARE grnt FROM @perm; \n" +
+                        "EXECUTE grnt;\n" +
+                        "PREPARE setrole FROM @setrole; \n" +
+                        "EXECUTE setrole;\n" +
+                        "\n" +
+                        "INSERT INTO `utilizador` (`nomeUtilizador`, `tipoUtilizador`,`email`) VALUES (username, tipoUtilizador ,email);  \n" +
+                        "\n" +
+                        "ELSE \n" +
+                        "\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não existe este tipo de utilizador. Só (A)dministrador e (I)nvestigador!'; \n" +
+                        "END IF;\n" +
+                        "\n" +
+                        "END";
+                statementLocalhost.executeUpdate(dropProcedimentoUtilizador);
+                statementLocalhost.executeUpdate(createUtilizadorProcedure);
+            }
 
-            //criar procedimento do user
-            String dropProcedimentoUtilizador = "DROP PROCEDURE IF EXISTS `create_user`";
-            String createUtilizadorProcedure= "CREATE DEFINER=`root`@`localhost` PROCEDURE `create_user`(IN `username` VARCHAR(50), IN `email` VARCHAR(50), IN `pwd` VARCHAR(50), IN `tipoUtilizador` CHAR(1)) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN\n" +
-                    "\n" +
-                    "IF tipoUtilizador = 'A' or tipoUtilizador = 'I' THEN\n" +
-                    "SET @user := CONCAT('CREATE USER ''', email, '''@''localhost''', ' IDENTIFIED BY ''', pwd, '''');\n" +
-                    "PREPARE stmt FROM @user; \n" +
-                    "EXECUTE stmt;\n" +
-                    "CASE \n" +
-                    "WHEN tipoUtilizador = 'I' THEN \n" +
-                    "\tSET @perm := concat('GRANT investigador TO ''',email,'''@''localhost''');\n" +
-                    "    SET @setrole := concat('SET DEFAULT ROLE investigador FOR ''',email,'''@''localhost''');\n" +
-                    "WHEN tipoUtilizador = 'A' THEN \n" +
-                    "\tSET @perm := concat('GRANT administrador TO ''',email,'''@''localhost''');\n" +
-                    "    SET @setrole := concat('SET DEFAULT ROLE administrador FOR ''',email,'''@''localhost''');\n" +
-                    "END CASE; \n" +
-                    "\n" +
-                    "PREPARE grnt FROM @perm; \n" +
-                    "EXECUTE grnt;\n" +
-                    "PREPARE setrole FROM @setrole; \n" +
-                    "EXECUTE setrole;\n" +
-                    "\n" +
-                    "INSERT INTO `utilizador` (`nomeUtilizador`, `tipoUtilizador`,`email`) VALUES (username, tipoUtilizador ,email);  \n" +
-                    "\n" +
-                    "ELSE \n" +
-                    "\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não existe este tipo de utilizador. Só (A)dministrador e (I)nvestigador!'; \n" +
-                    "END IF;\n" +
-                    "\n" +
-                    "END";
-            statementLocalhost.executeUpdate(dropProcedimentoUtilizador);
-            statementLocalhost.executeUpdate(createUtilizadorProcedure);
-
-
-            //criar trigger do limite de alerta
+            /*//criar trigger do limite de alerta
             String dropTriggerLimiteAlerta = "DROP TRIGGER IF EXISTS `alerta_cultura`";
             String createAlertaTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_cultura` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
                     "DECLARE id int; \n" +
@@ -243,8 +243,87 @@ public class SQLDatabaseConnection {
                     "DROP TEMPORARY TABLE items; \n" +
                     "END";
             statementLocalhost.executeUpdate(dropTriggerLimiteAlerta);
-            statementLocalhost.executeUpdate(createAlertaTrigger);
+            statementLocalhost.executeUpdate(createAlertaTrigger);*/
 
+            //criar trigger do limite de alerta de temperatura
+            String dropTriggerAlertaTemperatura = "DROP TRIGGER IF EXISTS `alerta_temperatura`";
+            String createTriggerAlertaTemperatura = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_temperatura` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
+                    "DECLARE id int; \n" +
+                    "DECLARE isRiscoModerado int; \n" +
+                    "CREATE TEMPORARY TABLE items (idCultura int); \n" +
+                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); \n" +
+                    "\n" +
+                    "IF @tipo = 'T' THEN \n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.tempLimInfAlerta OR new.valorMedicao>=cultura.tempLimSupAlerta)); \n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "DELETE FROM items WHERE (idCultura = @id); \n" +
+                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<cultura.tempLimInfAlerta)); \n" +
+                    "IF isRiscoModerado>0 THEN\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "ELSE \n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Temperatura Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da temperatura tolerável pela cultura.');\n" +
+                    "END IF;\n" +
+                    "END WHILE; \n" +
+                    "END IF; \n" +
+                    "\n" +
+                    "DROP TEMPORARY TABLE items; \n" +
+                    "END";
+            statementLocalhost.executeUpdate(dropTriggerAlertaTemperatura);
+            statementLocalhost.executeUpdate(createTriggerAlertaTemperatura);
+
+            //criar trigger do limite de alerta de humidade
+            String dropTriggerAlertaHumidade = "DROP TRIGGER IF EXISTS `alerta_humidade`";
+            String createTriggerAlertaHumidade = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_humidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
+                    "DECLARE id int; \n" +
+                    "DECLARE isRiscoModerado int; \n" +
+                    "CREATE TEMPORARY TABLE items (idCultura int); \n" +
+                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); \n" +
+                    "\n" +
+                    "IF @tipo = 'H' THEN \n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.humLimInfAlerta OR new.valorMedicao>=cultura.humLimSupAlerta)); \n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "DELETE FROM items WHERE (idCultura = @id);\n" +
+                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<cultura.humLimInfAlerta)); \n" +
+                    "IF isRiscoModerado>0 THEN\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da humidade tolerável pela cultura.');\n" +
+                    "ELSE\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Humidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites de humidade tolerável pela cultura.');\n" +
+                    "END IF;\n" +
+                    "END WHILE; \n" +
+                    "END IF; \n" +
+                    "\n" +
+                    "DROP TEMPORARY TABLE items; \n" +
+                    "END";
+            statementLocalhost.executeUpdate(dropTriggerAlertaHumidade);
+            statementLocalhost.executeUpdate(createTriggerAlertaHumidade);
+
+            //criar trigger do limite de alerta de luminosidade
+            String dropTriggerAlertaLuminosidade = "DROP TRIGGER IF EXISTS `alerta_luminosidade`";
+            String createTriggerAlertaLuminosidade = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_luminosidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
+                    "DECLARE id int; \n" +
+                    "DECLARE isRiscoModerado int; \n" +
+                    "CREATE TEMPORARY TABLE items (idCultura int); \n" +
+                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); \n" +
+                    "\n" +
+                    "IF @tipo = 'L' THEN \n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.lumLimInfAlerta OR new.valorMedicao>=cultura.lumLimSupAlerta)); \n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "DELETE FROM items WHERE (idCultura = @id); \n" +
+                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.lumLimSup AND new.valorMedicao>cultura.lumLimSupAlerta) OR (new.valorMedicao>cultura.lumLimInf AND new.valorMedicao<cultura.lumLimInfAlerta)); \n" +
+                    "IF isRiscoModerado>0 THEN\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Luminosidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da luminosidade tolerável pela cultura.');\n" +
+                    "ELSE\n" +
+                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Luminosidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da luminosidade tolerável pela cultura.');\n" +
+                    "END IF;\n" +
+                    "END WHILE; \n" +
+                    "END IF; \n" +
+                    "DROP TEMPORARY TABLE items; \n" +
+                    "END";
+            statementLocalhost.executeUpdate(dropTriggerAlertaLuminosidade);
+            statementLocalhost.executeUpdate(createTriggerAlertaLuminosidade);
 
             //criar trigger do valor fora do limite do sensor
             String dropTriggerValorInvalido = "DROP TRIGGER IF EXISTS `valor_invalido`";
