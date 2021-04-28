@@ -153,6 +153,28 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropProcedimentoRemoverCultura);
             statementLocalhost.executeUpdate(createRemoverCulturaProcedure);
 
+            //criar procedimento de alterar cultura
+            String dropProcedimentoAlterarCultura = "DROP PROCEDURE IF EXISTS `alterar_cultura`";
+            String createAlterarCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_cultura`(IN `idCultura` INT, IN `idZona` INT, IN `nomeCultura` VARCHAR(50), IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN \n" +
+                    "\n" +
+                    "SET @cultura_valida :=(SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(current_user(),'@localhost', 1)) and cultura.idCultura=idCultura); \n" +
+                    "\n" +
+                    "IF @cultura_valida <> 0 THEN\n" +
+                    "\n" +
+                    "IF lumLimSup > lumLimSupAlerta and lumLimSupAlerta > lumLimInfAlerta and lumLimInfAlerta > lumLimInf and tempLimSup >  tempLimSupAlerta and tempLimSupAlerta > tempLimInfAlerta and tempLimInfAlerta > tempLimInf and humLimSup >  humLimSupAlerta and humLimSupAlerta > humLimInfAlerta and humLimInfAlerta > humLimInf THEN\n" +
+                    "\tSET @isValido := 1; \n" +
+                    "ELSE \n" +
+                    "    SET @isValido := 0;\n" +
+                    "END IF;\n" +
+                    "\n" +
+                    "UPDATE `cultura` SET `idZona` = idZona, `nomeCultura` = nomeCultura, `lumLimSup` = lumLimSup, `lumLimInf` = lumLimInf, `tempLimSup` = tempLimSup, `tempLimInf` = tempLimInf, `humLimSup` = humLimSup, `humLimInf` = humLimInf, `lumLimSupAlerta` = lumLimSupAlerta, `lumLimInfAlerta` = lumLimInfAlerta, `tempLimSupAlerta` = tempLimSupAlerta, `tempLimInfAlerta` = tempLimInfAlerta, `humLimSupAlerta` = humLimSupAlerta, `humLimInfAlerta` = humLimInfAlerta, `isValido` = @isValido WHERE cultura.idCultura = idCultura;\n" +
+                    "ELSE\n" +
+                    "\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'É uma cultura inválida para o utilizador atual!';\n" +
+                    "END IF;\n" +
+                    "END";
+            statementLocalhost.executeUpdate(dropProcedimentoAlterarCultura);
+            statementLocalhost.executeUpdate(createAlterarCulturaProcedure);
+
             //criar procedimento de atribuir um utilizador a uma cultura
             String dropProcedimentoAtribuirUtilizadorCultura = "DROP PROCEDURE IF EXISTS `atribuir_cultura_investigador`";
             String createAtribuirUtilizadorCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atribuir_cultura_investigador`(IN `idCultura` INT, IN `idUtilizador` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN IF (SELECT tipoUtilizador FROM utilizador WHERE utilizador.idUtilizador = idUtilizador) = 'i' THEN UPDATE `cultura` SET `idUtilizador` = idUtilizador WHERE `cultura`.`idCultura` = idCultura; ELSE SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insira um idUtilizador válido e que seja Investigador!'; END IF; END;";
@@ -433,10 +455,14 @@ public class SQLDatabaseConnection {
             //Criar ROLE investigador
             String dropRoleInvestigador = "DROP ROLE IF EXISTS `investigador`;";
             String createInvestigador = "CREATE ROLE investigador;";
-            String privilegiosInvestigador = "GRANT UPDATE (`lumLimInf`, `lumLimSup`, `tempLimInf`, `tempLimSup`, `humLimInf`, `humLimSup`, `lumLimInfAlerta`, `lumLimSupAlerta`, `tempLimInfAlerta`, `tempLimSupAlerta`, `humLimInfAlerta`, `humLimSupAlerta`) ON  `sid2021`.`cultura` TO 'investigador'";
+            String privilegiosProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_cultura TO 'investigador'";
+            String privilegiosSelectCulturaInvestigador = "GRANT SELECT ON `sid2021`.`cultura` TO 'investigador';";
+            String privilegiosSelectUtilizadorInvestigador = "GRANT SELECT ON `sid2021`.`utilizador` TO 'investigador';";
             statementLocalhost.executeUpdate(dropRoleInvestigador);
             statementLocalhost.executeUpdate(createInvestigador);
-            statementLocalhost.executeUpdate(privilegiosInvestigador);
+            statementLocalhost.executeUpdate(privilegiosProcedureInvestigador);
+            statementLocalhost.executeUpdate(privilegiosSelectCulturaInvestigador);
+            statementLocalhost.executeUpdate(privilegiosSelectUtilizadorInvestigador);
 
             //Criar ROLE administrador
             String dropRoleAdmin = "DROP ROLE IF EXISTS `administrador`;";
@@ -448,6 +474,15 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(privilegiosAdminUtilizador);
             statementLocalhost.executeUpdate(privilegiosAdminCulturas);
 
+            //Criar ROLE java
+            String dropRoleJava = "DROP ROLE IF EXISTS `java`;";
+            String createJava = "CREATE ROLE java;";
+            String privilegiosProcedureJava = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_cultura TO 'java'";
+            String privilegiosSelectJava = "GRANT SELECT ON `sid2021`.`cultura` TO 'java'";
+            statementLocalhost.executeUpdate(dropRoleJava);
+            statementLocalhost.executeUpdate(createJava);
+            //statementLocalhost.executeUpdate(privilegiosProcedureJava);
+            statementLocalhost.executeUpdate(privilegiosSelectJava);
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
@@ -494,8 +529,27 @@ DELIMITER // DROP TRIGGER IF EXISTS `valor_invalido`// CREATE DEFINER=`root`@`lo
 
 
 
+select substring_index(current_user(),'@', 1)
+SELECT nomeCultura FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(current_user(),'@', 1))
 
 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_cultura`(IN `idCultura` INT, IN `idZona` INT, IN `nomeCultura` VARCHAR(50), IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN
 
+IF lumLimSup > lumLimSupAlerta and lumLimSupAlerta > lumLimInfAlerta and lumLimInfAlerta > lumLimInf and tempLimSup >  tempLimSupAlerta and tempLimSupAlerta > tempLimInfAlerta and tempLimInfAlerta > tempLimInf and humLimSup >  humLimSupAlerta and humLimSupAlerta > humLimInfAlerta and humLimInfAlerta > humLimInf THEN
+	SET @isValido := 1;
+ELSE
+    SET @isValido := 0;
+END IF;
 
+SET @cultura_valida :=(SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(current_user(),'@', 1)) and cultura.idCultura=idCultura);
+
+IF @cultura_valida <> 0 THEN
+	DELETE FROM `cultura` WHERE `idCultura` = idCultura;
+ELSE
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'É uma cultura inválida para o utilizador atual!';
+END IF;
+END
+
+CALL `alterar_cultura`(1,2,'morangos',20,10,20,10,20,30,15,12,15,12,15,12)
+SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(current_user(),'@', 1)) and cultura.idCultura=idCultura
 */
