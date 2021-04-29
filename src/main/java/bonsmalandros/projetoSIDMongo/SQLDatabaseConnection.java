@@ -157,7 +157,7 @@ public class SQLDatabaseConnection {
             String dropProcedimentoAlterarCultura = "DROP PROCEDURE IF EXISTS `alterar_cultura`";
             String createAlterarCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_cultura`(IN `idCultura` INT, IN `idZona` INT, IN `nomeCultura` VARCHAR(50), IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN \n" +
                     "\n" +
-                    "SET @cultura_valida :=(SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(current_user(),'@localhost', 1)) and cultura.idCultura=idCultura); \n" +
+                    "SET @cultura_valida :=(SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(user(),'@', 1)) and cultura.idCultura=idCultura); \n" +
                     "\n" +
                     "IF @cultura_valida <> 0 THEN\n" +
                     "\n" +
@@ -550,6 +550,7 @@ ELSE
 END IF;
 END
 
+GRANT EXECUTE ON PROCEDURE sid2021.alterar_cultura TO 'investigador'
 CALL `alterar_cultura`(1,2,'morangos',20,10,20,10,20,30,15,12,15,12,15,12)
 SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(current_user(),'@', 1)) and cultura.idCultura=idCultura
 */
