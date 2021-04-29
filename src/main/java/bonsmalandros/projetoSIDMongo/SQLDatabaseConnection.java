@@ -477,12 +477,20 @@ public class SQLDatabaseConnection {
             //Criar ROLE java
             String dropRoleJava = "DROP ROLE IF EXISTS `java`;";
             String createJava = "CREATE ROLE java;";
-            String privilegiosProcedureJava = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_cultura TO 'java'";
-            String privilegiosSelectJava = "GRANT SELECT ON `sid2021`.`cultura` TO 'java'";
+            String privilegiosCriarMedicaoProcedureJava = "GRANT EXECUTE ON PROCEDURE sid2021.criar_medicao TO 'java'";
+            String privilegiosCriarAlertaProcedureJava = "GRANT EXECUTE ON PROCEDURE sid2021.criar_alerta TO 'java'";
+            String dropUserJava = "DROP USER IF EXISTS java@localhost;";
+            String createUserJava = "CREATE USER java@localhost IDENTIFIED BY 'java'";
+            String grantDefaultRoleJava = "GRANT java TO java@localhost;";
+            String setDefaultRoleJava = "SET DEFAULT ROLE java FOR java@localhost";
             statementLocalhost.executeUpdate(dropRoleJava);
             statementLocalhost.executeUpdate(createJava);
-            //statementLocalhost.executeUpdate(privilegiosProcedureJava);
-            statementLocalhost.executeUpdate(privilegiosSelectJava);
+            statementLocalhost.executeUpdate(privilegiosCriarMedicaoProcedureJava);
+            statementLocalhost.executeUpdate(privilegiosCriarAlertaProcedureJava);
+            statementLocalhost.executeUpdate(dropUserJava);
+            statementLocalhost.executeUpdate(createUserJava);
+            statementLocalhost.executeUpdate(grantDefaultRoleJava);
+            statementLocalhost.executeUpdate(setDefaultRoleJava);
 
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
