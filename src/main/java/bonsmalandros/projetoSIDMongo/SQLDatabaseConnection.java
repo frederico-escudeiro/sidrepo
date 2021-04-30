@@ -44,7 +44,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaSensor() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT, `limiteSup` DOUBLE NOT NULL , `limiteInf` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `sensor` ADD  CONSTRAINT `sensor-zona` FOREIGN KEY (`idZona`) REFERENCES `zona`(`idZona`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
         statementLocalhost.executeUpdate(addForeignKey);
@@ -136,8 +136,9 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(createAlertaProcedure);
 
             //criar procedimento da medicao
-            String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `criar_medicao`";
-            String createMedicaoProcedure = "CREATE PROCEDURE `criar_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
+            String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `create_medicao`";
+            String createMedicaoProcedure = "CREATE PROCEDURE `create_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
+
             statementLocalhost.executeUpdate(dropProcedimentoMedicao);
             statementLocalhost.executeUpdate(createMedicaoProcedure);
 
@@ -366,14 +367,16 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(createTriggerAlertaLuminosidade);
 
             //criar trigger do valor fora do limite do sensor
-            String dropTriggerValorInvalido = "DROP TRIGGER IF EXISTS `valor_invalido`";
+/*            String dropTriggerValorInvalido = "DROP TRIGGER IF EXISTS `valor_invalido`";
             String createForaDoLimiteTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `valor_invalido` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN DECLARE nInvalidos integer; SELECT COUNT(*) into nInvalidos FROM sensor, medicao WHERE sensor.idSensor=new.idSensor AND (sensor.limiteSup<new.valorMedicao OR sensor.limiteInf>new.valorMedicao); IF nInvalidos>0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido recusado!'; END IF; END;";
             statementLocalhost.executeUpdate(dropTriggerValorInvalido);
             statementLocalhost.executeUpdate(createForaDoLimiteTrigger);
+*/
+
 
             //criar trigger para outliers
-            String dropTriggerOutlierTemp = "DROP TRIGGER IF EXISTS `outlier_temp`";
-            String createOutlierTempTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `outlier_temp` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN\n" +
+            String dropTriggerValidacaoTemp = "DROP TRIGGER IF EXISTS `validacao_temperatura`";
+            String createValidacaoTempTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `validacao_temperatura` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN\n" +
                     "\n" +
                     "CREATE TEMPORARY TABLE vetor (valorMedicao double); \n" +
                     "\n" +
@@ -381,8 +384,12 @@ public class SQLDatabaseConnection {
                     "\n" +
                     "SET @ultimaMedicao := (SELECT medicao.tempo FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 1);\n" +
                     "\n" +
-                    "IF @tipo = 'T' AND (SELECT TIMESTAMPDIFF(SECOND, @ultimaMedicao,new.tempo))<10 THEN\n" +
-                    "INSERT INTO vetor (SELECT DISTINCT valorMedicao FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 5);\n" +
+                    "IF new.validacao = 'v' THEN\n" +
+
+                    "\n" +
+                    "IF @tipo = 'T' AND (SELECT TIMESTAMPDIFF(MINUTE, @ultimaMedicao,new.tempo))<10 THEN\n" +
+
+                    "INSERT INTO vetor (SELECT valorMedicao FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 5);\n" +
                     "\n" +
                     "\n" +
                     "\n" +
@@ -393,17 +400,20 @@ public class SQLDatabaseConnection {
                     "SET @maiorValor := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 4,1);\n" +
                     "\n" +
                     "IF (SELECT COUNT(*) FROM vetor)>4 THEN\n" +
+
                     "\t\tSET @limiteInf := (@mediana - @menorValor +" + outlierTemperatura + ");\n" +
                     "        SET @limiteSup := (@maiorValor - @mediana +" + outlierTemperatura + ");\n" +
                     "        IF (new.valorMedicao<(@mediana-@limiteInf) OR new.valorMedicao>(@mediana+@limiteSup)) THEN \n" +
-                    "\t\t\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Outlier Detetado!'; \n" +
+                    "SIGNAL SQLSTATE '02000' SET MESSAGE_TEXT = 'Call Procedure';" +
+                    "\t\t\tCALL `create_medicao`(new.idSensor , new.tempo, new.valorMedicao, 'i'); \n" +
                     "\t\tEND IF;\n" +
+                    "END IF;\n" +
                     "END IF;\n" +
                     "END IF;\n" +
                     "DROP TEMPORARY TABLE vetor;\n" +
                     "END";
-            statementLocalhost.executeUpdate(dropTriggerOutlierTemp);
-            statementLocalhost.executeUpdate(createOutlierTempTrigger);
+            statementLocalhost.executeUpdate(dropTriggerValidacaoTemp);
+            statementLocalhost.executeUpdate(createValidacaoTempTrigger);
 
 
             //Ler a tabela 'zona'
@@ -429,14 +439,12 @@ public class SQLDatabaseConnection {
             int idSensor = 1;
             while (resultSetCLoud.next()) {
                 //Inserir os valores na tabela 'sensor'
-                String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ('" +
+                String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`) VALUES ('" +
                         idSensor + "', '" +
                         resultSetCLoud.getString(2) + "', '" +
-                        Integer.parseInt(resultSetCLoud.getString(5)) + "', '" +
-                        Double.parseDouble(resultSetCLoud.getString(4)) + "', '" +
-                        Double.parseDouble(resultSetCLoud.getString(3)) + "') " +
-                        "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`), " +
-                        "`limiteSup`=VALUES(`limiteSup`), `limiteInf`=VALUES(`limiteInf`)";
+                        Integer.parseInt(resultSetCLoud.getString(5)) + "') " +
+
+                        "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`)";
                 idSensor++;
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
@@ -448,9 +456,17 @@ public class SQLDatabaseConnection {
             String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');";
             statementLocalhost.executeUpdate(insertAlerta);
 
-            String procedMedicaoInsert = "CALL `create_medicao`('3', '2021-03-11 16:29:47', '6');";
-            //statementLocalhost.executeUpdate(procedMedicaoInsert);
 
+            for(int i =0; i<5; i++) {
+
+                String procedMedicaoInsert = "CALL `create_medicao`('3', '2021-04-28 11:50:0"+i+"', '6', 'v');";
+                statementLocalhost.executeUpdate(procedMedicaoInsert);
+
+            }
+
+
+            String procedMedicaoInsert = "CALL `create_medicao`('3', '2021-04-28 11:50:0"+6+"', '20', 'v');";
+            //statementLocalhost.executeUpdate(procedMedicaoInsert);
 
             //Criar ROLE investigador
             String dropRoleInvestigador = "DROP ROLE IF EXISTS `investigador`;";
