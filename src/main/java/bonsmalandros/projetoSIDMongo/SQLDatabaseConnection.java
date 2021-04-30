@@ -136,8 +136,8 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(createAlertaProcedure);
 
             //criar procedimento da medicao
-            String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `create_medicao`";
-            String createMedicaoProcedure = "CREATE PROCEDURE `create_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
+            String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `criar_medicao`";
+            String createMedicaoProcedure = "CREATE PROCEDURE `criar_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
 
             statementLocalhost.executeUpdate(dropProcedimentoMedicao);
             statementLocalhost.executeUpdate(createMedicaoProcedure);
@@ -375,6 +375,7 @@ public class SQLDatabaseConnection {
 
 
             //criar trigger para outliers
+            /*
             String dropTriggerValidacaoTemp = "DROP TRIGGER IF EXISTS `validacao_temperatura`";
             String createValidacaoTempTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `validacao_temperatura` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN\n" +
                     "\n" +
@@ -414,7 +415,7 @@ public class SQLDatabaseConnection {
                     "END";
             statementLocalhost.executeUpdate(dropTriggerValidacaoTemp);
             statementLocalhost.executeUpdate(createValidacaoTempTrigger);
-
+            */
 
             //Ler a tabela 'zona'
             String selectSqlCloud = "SELECT * FROM `zona`";
@@ -459,13 +460,13 @@ public class SQLDatabaseConnection {
 
             for(int i =0; i<5; i++) {
 
-                String procedMedicaoInsert = "CALL `create_medicao`('3', '2021-04-28 11:50:0"+i+"', '6', 'v');";
+                String procedMedicaoInsert = "CALL `criar_medicao`('3', '2021-04-28 11:50:0"+i+"', '6', 'v');";
                 statementLocalhost.executeUpdate(procedMedicaoInsert);
 
             }
 
 
-            String procedMedicaoInsert = "CALL `create_medicao`('3', '2021-04-28 11:50:0"+6+"', '20', 'v');";
+            String procedMedicaoInsert = "CALL `criar_medicao`('3', '2021-04-28 11:50:0"+6+"', '20', 'v');";
             //statementLocalhost.executeUpdate(procedMedicaoInsert);
 
             //Criar ROLE investigador
