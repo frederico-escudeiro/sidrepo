@@ -160,7 +160,7 @@ public class SQLDatabaseConnection {
                     "SET @cultura_valida :=(SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(user(),'@', 1)) and cultura.idCultura=idCultura); \n" +
                     "\n" +
                     "IF @cultura_valida <> 0 THEN\n" +
-                    "\n" +
+                    "IF (SELECT COUNT(*) FROM zona WHERE zona.idZona=idZona) > 0 THEN\n" +
                     "IF lumLimSup > lumLimSupAlerta and lumLimSupAlerta > lumLimInfAlerta and lumLimInfAlerta > lumLimInf and tempLimSup >  tempLimSupAlerta and tempLimSupAlerta > tempLimInfAlerta and tempLimInfAlerta > tempLimInf and humLimSup >  humLimSupAlerta and humLimSupAlerta > humLimInfAlerta and humLimInfAlerta > humLimInf THEN\n" +
                     "\tSET @isValido := 1; \n" +
                     "ELSE \n" +
@@ -168,6 +168,10 @@ public class SQLDatabaseConnection {
                     "END IF;\n" +
                     "\n" +
                     "UPDATE `cultura` SET `idZona` = idZona, `nomeCultura` = nomeCultura, `lumLimSup` = lumLimSup, `lumLimInf` = lumLimInf, `tempLimSup` = tempLimSup, `tempLimInf` = tempLimInf, `humLimSup` = humLimSup, `humLimInf` = humLimInf, `lumLimSupAlerta` = lumLimSupAlerta, `lumLimInfAlerta` = lumLimInfAlerta, `tempLimSupAlerta` = tempLimSupAlerta, `tempLimInfAlerta` = tempLimInfAlerta, `humLimSupAlerta` = humLimSupAlerta, `humLimInfAlerta` = humLimInfAlerta, `isValido` = @isValido WHERE cultura.idCultura = idCultura;\n" +
+                    "\n" +
+                    "ELSE\n" +
+                    "\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'É uma zona inválida!';\n" +
+                    "END IF;\n" +
                     "ELSE\n" +
                     "\tSIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'É uma cultura inválida para o utilizador atual!';\n" +
                     "END IF;\n" +
@@ -195,7 +199,7 @@ public class SQLDatabaseConnection {
 
             //criar procedimento de alterar utilizador
             String dropProcedimentoAlterarUtilizador = "DROP PROCEDURE IF EXISTS `alterar_utilizador`";
-            String createAlterarUtilizadorProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_utilizador`(IN `email` VARCHAR(50), IN `nomeUtilizador` VARCHAR(50), IN `intervaloMinimoAvisos` TIME) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN UPDATE `utilizador` SET `nomeUtilizador`= nomeUtilizador, `intervaloMinimoAvisos` = intervaloMinimoAvisos WHERE `email` = email; END;";
+            String createAlterarUtilizadorProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_utilizador`(IN `emailInput` VARCHAR(50), IN `nomeUtilizadorInput` VARCHAR(50), IN `intervaloMinimoAvisosInput` TIME) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN UPDATE `utilizador` SET `nomeUtilizador`= nomeUtilizadorInput, `intervaloMinimoAvisos` = intervaloMinimoAvisosInput WHERE `email` = emailInput; END;";
             statementLocalhost.executeUpdate(dropProcedimentoAlterarUtilizador);
             statementLocalhost.executeUpdate(createAlterarUtilizadorProcedure);
 
