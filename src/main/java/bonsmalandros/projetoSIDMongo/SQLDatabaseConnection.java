@@ -752,7 +752,7 @@ WHILE EXISTS(SELECT * FROM items) DO
 SET @id := (SELECT * FROM items LIMIT 1);
 DELETE FROM items WHERE (idCultura = @id);
 SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);
-INSERT INTO ultima_medicao (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='T' ORDER BY medicao.tempo, medicao.idMedicao DESC LIMIT 1);
+INSERT INTO ultima_medicao (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='T' ORDER BY medicao.tempo DESC LIMIT 1);
 CASE
 WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>=cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<=cultura.tempLimInfAlerta))) > 0 THEN
 SET @tipo_nova_medicao := 'Alerta';
@@ -762,19 +762,21 @@ ELSE
 SET @tipo_nova_medicao := 'Bom';
 END CASE;
 CASE
-WHEN (SELECT COUNT(*) FROM ultima_medicao) = 0 OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura em Alerta - Estado Atual Bom' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura Crítica - Estado Atual Bom' THEN
+WHEN (SELECT COUNT(*) FROM ultima_medicao) = 0 OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura em Alerta' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura Crítica - Estado Atual Bom' THEN
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'a!';
     CASE
     WHEN @tipo_nova_medicao = 'Alerta' THEN
         CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
     WHEN @tipo_nova_medicao = 'Critico' THEN
         CALL `criar_alerta`(@id, new.idMedicao , 'Temperatura Crítica' , 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
-    END CASE;
+        ELSE BEGIN END;
+   	END CASE;
 WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Alerta Temperatura' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura Crítica - Estado Atual Alerta' THEN
     CASE
     WHEN @tipo_nova_medicao = 'Bom' THEN
         CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação de Temperatura em Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
     WHEN @tipo_nova_medicao = 'Alerta' THEN
-        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN
+        IF new.tempo > ADDTIME(@interval,(SELECT tempo FROM ultima_medicao)) THEN
             CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
         END IF;
     WHEN @tipo_nova_medicao = 'Critico' THEN
@@ -787,7 +789,7 @@ WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Temperatura Crítica' THEN
     WHEN @tipo_nova_medicao = 'Alerta' THEN
         CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Temperatura Crítica - Estado Atual Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
     WHEN @tipo_nova_medicao = 'Critico' THEN
-        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN
+        IF new.tempo > ADDTIME(@interval,(SELECT tempo FROM ultima_medicao)) THEN
             CALL `criar_alerta`(@id, new.idMedicao , 'Temperatura Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
         END IF;
     END CASE;
