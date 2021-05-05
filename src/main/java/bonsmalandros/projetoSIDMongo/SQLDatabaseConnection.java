@@ -63,7 +63,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaAlerta() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(50) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(100) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-cultura` FOREIGN KEY (`idCultura`) REFERENCES `cultura`(`idCultura`) ON DELETE CASCADE ON UPDATE CASCADE;";
         String addForeignKey2 = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-medicao` FOREIGN KEY (`idMedicao`) REFERENCES `medicao`(`idMedicao`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
@@ -131,7 +131,7 @@ public class SQLDatabaseConnection {
 
             //criar procedimento do alerta
             String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `criar_alerta`";
-            String createAlertaProcedure = "CREATE PROCEDURE `criar_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(50), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END;";
+            String createAlertaProcedure = "CREATE PROCEDURE `criar_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(100), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END;";
             statementLocalhost.executeUpdate(dropProcedimentoAlerta);
             statementLocalhost.executeUpdate(createAlertaProcedure);
 
@@ -318,28 +318,68 @@ public class SQLDatabaseConnection {
 
             //criar trigger do limite de alerta de humidade
             String dropTriggerAlertaHumidade = "DROP TRIGGER IF EXISTS `alerta_humidade`";
-            String createTriggerAlertaHumidade = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_humidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
-                    "DECLARE id int; \n" +
-                    "DECLARE isRiscoModerado int; \n" +
-                    "CREATE TEMPORARY TABLE items (idCultura int); \n" +
-                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); \n" +
+            String createTriggerAlertaHumidade = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_humidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\n" +
+                    "DECLARE id int;\n" +
+                    "DECLARE isRiscoModerado int;\n" +
+                    "CREATE TEMPORARY TABLE items (idCultura int);\n" +
+                    "CREATE TEMPORARY TABLE ultima_medicao (tipoAlerta varchar(50), tempo timestamp);\n" +
+                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\n" +
                     "\n" +
-                    "IF @tipo = 'H' and new.validacao = 'v' THEN \n" +
-                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.humLimInfAlerta OR new.valorMedicao>=cultura.humLimSupAlerta)); \n" +
-                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
-                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
+                    "IF @tipo = 'H' and new.validacao = 'v' THEN\n" +
+                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao);\n" +
+                    "WHILE EXISTS(SELECT * FROM items) DO\n" +
+                    "SET @id := (SELECT * FROM items LIMIT 1);\n" +
                     "DELETE FROM items WHERE (idCultura = @id);\n" +
-                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<cultura.humLimInfAlerta)); \n" +
-                    "IF isRiscoModerado>0 THEN\n" +
-                    "CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da humidade tolerável pela cultura.');\n" +
+                    "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);\n" +
+                    "INSERT INTO ultima_medicao (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='H' ORDER BY medicao.tempo DESC LIMIT 1);\n" +
+                    "CASE\n" +
+                    "WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>=cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<=cultura.humLimInfAlerta))) > 0 THEN\n" +
+                    "SET @tipo_nova_medicao := 'Alerta';\n" +
+                    "WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao>=cultura.humLimSup) OR (new.valorMedicao<=cultura.humLimInf))) > 0 THEN\n" +
+                    "SET @tipo_nova_medicao := 'Critico';\n" +
                     "ELSE\n" +
-                    "CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Limite Humidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites de humidade tolerável pela cultura.');\n" +
+                    "SET @tipo_nova_medicao := 'Bom';\n" +
+                    "END CASE;\n" +
+                    "CASE\n" +
+                    "WHEN (SELECT COUNT(*) FROM ultima_medicao) = 0 OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Humidade em Alerta' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Humidade Crítica - Estado Atual Bom' THEN\n" +
+                    "    CASE\n" +
+                    "    WHEN @tipo_nova_medicao = 'Alerta' THEN\n" +
+                    "        CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "    WHEN @tipo_nova_medicao = 'Critico' THEN\n" +
+                    "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica' , 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "    END CASE;\n" +
+                    "    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'b!';\n" +
+                    "WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Alerta Humidade' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Humidade Crítica - Estado Atual Alerta' THEN\n" +
+                    "    CASE\n" +
+                    "    WHEN @tipo_nova_medicao = 'Bom' THEN\n" +
+                    "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação de Humidade em Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "    WHEN @tipo_nova_medicao = 'Alerta' THEN\n" +
+                    "        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN\n" +
+                    "            CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "        END IF;\n" +
+                    "    WHEN @tipo_nova_medicao = 'Critico' THEN\n" +
+                    "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "    END CASE;\n" +
+                    "    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'a!';\n" +
+                    "WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Humidade Crítica' THEN\n" +
+                    "    CASE\n" +
+                    "    WHEN @tipo_nova_medicao = 'Bom' THEN\n" +
+                    "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Bom', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "    WHEN @tipo_nova_medicao = 'Alerta' THEN\n" +
+                    "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "    WHEN @tipo_nova_medicao = 'Critico' THEN\n" +
+                    "        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN\n" +
+                    "            CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
+                    "        END IF;\n" +
+                    "    END CASE;\n" +
+                    "    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'c!';\n" +
+                    "END CASE;\n" +
+                    "END WHILE;\n" +
                     "END IF;\n" +
-                    "END WHILE; \n" +
-                    "END IF; \n" +
                     "\n" +
-                    "DROP TEMPORARY TABLE items; \n" +
-                    "END";
+                    "DROP TEMPORARY TABLE items;\n" +
+                    "DROP TEMPORARY TABLE ultima_medicao;\n" +
+                    "END\n";
             statementLocalhost.executeUpdate(dropTriggerAlertaHumidade);
             statementLocalhost.executeUpdate(createTriggerAlertaHumidade);
 
@@ -613,12 +653,11 @@ INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cu
 WHILE EXISTS(SELECT * FROM items) DO
 SET @id := (SELECT * FROM items LIMIT 1);
 DELETE FROM items WHERE (idCultura = @id);
-SET @ultima_medicao :=(SELECT medicao.idMedicao FROM alerta, medicao WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao ORDER BY medicao.tempo DESC LIMIT 1);
 SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);
-IF new.tempo > @interval + (SELECT tempo FROM medicao WHERE @ultima_medicao=medicao.idMedicao) THEN
-SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<cultura.tempLimInfAlerta));
 CASE
-WHEN THEN
+WHEN SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<cultura.tempLimInfAlerta)) > 0 THEN
+SET @ultima_medicao :=(SELECT medicao.idMedicao FROM alerta, medicao WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and alerta.tipoAlerta='Alerta Limite Humidade Ultrapassado' ORDER BY medicao.tempo DESC LIMIT 1);
+IF new.tempo > @interval + (SELECT tempo FROM medicao WHERE @ultima_medicao=medicao.idMedicao) THEN
 CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
 ELSE
 CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Limite Temperatura Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da temperatura tolerável pela cultura.');
@@ -635,5 +674,128 @@ END
 
 //Ir buscar o estado da cultura
 
+BEGIN
+DECLARE id int;
+DECLARE isRiscoModerado int;
+CREATE TEMPORARY TABLE items (idCultura int);
+CREATE TEMPORARY TABLE ultima_medicao (tipoAlerta varchar(50), tempo timestamp);
+SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);
 
+IF @tipo = 'H' and new.validacao = 'v' THEN
+INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao);
+WHILE EXISTS(SELECT * FROM items) DO
+SET @id := (SELECT * FROM items LIMIT 1);
+DELETE FROM items WHERE (idCultura = @id);
+SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);
+INSERT INTO ultima_medicao (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='H' ORDER BY medicao.tempo DESC LIMIT 1);
+CASE
+WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>=cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<=cultura.humLimInfAlerta))) > 0 THEN
+SET @tipo_nova_medicao := 'Alerta';
+WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao>=cultura.humLimSup) OR (new.valorMedicao<=cultura.humLimInf))) > 0 THEN
+SET @tipo_nova_medicao := 'Critico';
+ELSE
+SET @tipo_nova_medicao := 'Bom';
+END CASE;
+CASE
+WHEN (SELECT COUNT(*) FROM ultima_medicao) = 0 OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Humidade em Alerta' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Humidade Crítica - Estado Atual Bom' THEN
+    CASE
+    WHEN @tipo_nova_medicao = 'Alerta' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Critico' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica' , 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    END CASE;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'b!';
+WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Alerta Humidade' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Humidade Crítica - Estado Atual Alerta' THEN
+    CASE
+    WHEN @tipo_nova_medicao = 'Bom' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação de Humidade em Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Alerta' THEN
+        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN
+            CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+        END IF;
+    WHEN @tipo_nova_medicao = 'Critico' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    END CASE;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'a!';
+WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Humidade Crítica' THEN
+    CASE
+    WHEN @tipo_nova_medicao = 'Bom' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Bom', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Alerta' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Critico' THEN
+        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN
+            CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+        END IF;
+    END CASE;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'c!';
+END CASE;
+END WHILE;
+END IF;
+
+DROP TEMPORARY TABLE items;
+DROP TEMPORARY TABLE ultima_medicao;
+END
+
+
+
+BEGIN
+DECLARE id int;
+DECLARE isRiscoModerado int;
+CREATE TEMPORARY TABLE items (idCultura int);
+CREATE TEMPORARY TABLE ultima_medicao (tipoAlerta varchar(100), tempo timestamp);
+SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);
+
+IF @tipo = 'T' and new.validacao = 'v' THEN
+INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao);
+WHILE EXISTS(SELECT * FROM items) DO
+SET @id := (SELECT * FROM items LIMIT 1);
+DELETE FROM items WHERE (idCultura = @id);
+SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);
+INSERT INTO ultima_medicao (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='T' ORDER BY medicao.tempo, medicao.idMedicao DESC LIMIT 1);
+CASE
+WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>=cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<=cultura.tempLimInfAlerta))) > 0 THEN
+SET @tipo_nova_medicao := 'Alerta';
+WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao>=cultura.tempLimSup) OR (new.valorMedicao<=cultura.tempLimInf))) > 0 THEN
+SET @tipo_nova_medicao := 'Critico';
+ELSE
+SET @tipo_nova_medicao := 'Bom';
+END CASE;
+CASE
+WHEN (SELECT COUNT(*) FROM ultima_medicao) = 0 OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura em Alerta - Estado Atual Bom' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura Crítica - Estado Atual Bom' THEN
+    CASE
+    WHEN @tipo_nova_medicao = 'Alerta' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Critico' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Temperatura Crítica' , 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    END CASE;
+WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Alerta Temperatura' OR (SELECT tipoAlerta FROM ultima_medicao) = 'Recuperação da Temperatura Crítica - Estado Atual Alerta' THEN
+    CASE
+    WHEN @tipo_nova_medicao = 'Bom' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação de Temperatura em Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Alerta' THEN
+        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN
+            CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+        END IF;
+    WHEN @tipo_nova_medicao = 'Critico' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Temperatura Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    END CASE;
+WHEN (SELECT tipoAlerta FROM ultima_medicao) = 'Temperatura Crítica' THEN
+    CASE
+    WHEN @tipo_nova_medicao = 'Bom' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Temperatura Crítica - Estado Atual Bom', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Alerta' THEN
+        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Temperatura Crítica - Estado Atual Alerta', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+    WHEN @tipo_nova_medicao = 'Critico' THEN
+        IF new.tempo > @interval + (SELECT tempo FROM ultima_medicao) THEN
+            CALL `criar_alerta`(@id, new.idMedicao , 'Temperatura Crítica', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');
+        END IF;
+    END CASE;
+END CASE;
+END WHILE;
+END IF;
+
+DROP TEMPORARY TABLE items;
+DROP TEMPORARY TABLE ultima_medicao;
+END
 */
