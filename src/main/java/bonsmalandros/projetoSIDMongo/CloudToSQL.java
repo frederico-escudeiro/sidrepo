@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
@@ -31,6 +32,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private static Statement statementLocalhost;
 	private static Connection connectionCloud;
 	private static Statement statementCloud;
+	private CheckerThread threadChecker;
+	private ValidaMedicoes valida;
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior) {
 		try {
@@ -50,10 +53,14 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			connectToSQL(properties.getProperty("SQL_Cloud"), properties.getProperty("user_SQL_Cloud"),
 					properties.getProperty("pass_SQL_Cloud"), false);
 			new CheckerThread(Integer.parseInt(properties.getProperty("check_SQL_Cloud")), true).start();
+			threadChecker = new CheckerThread(Integer.parseInt(properties.getProperty("check_SQL_Cloud")), false);
+			valida = new ValidaMedicoes();
+			threadChecker.start();
 		} catch (Exception e) {
 			System.out.println("Error reading CloudToSQL.ini file ");
 			e.printStackTrace();
 		}
+
 	}
 
 	public void run() {
@@ -88,7 +95,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	}
 
 	void dealWithData(String message) {
-		System.out.println(message);
+		//System.out.println(message);
 		// String[] data_medicao = message.split("(\\{\"Tempo\": \\{\"\\$date\":
 		// \")|(\"\\}, \"Medicao\": )|(\\})");
 
@@ -98,28 +105,30 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		String data_medicao_3 = data_medicao_2.replace("\" }", "");
 		String[] data_medicao = data_medicao_3.split(" ");
 
-		System.out.println("Deal with Data: " + data_medicao[0] + " " + data_medicao[1]);
+		//System.out.println("Deal with Data: " + data_medicao[0] + " " + data_medicao[1]);
 		String data1 = data_medicao[0].replace("T", " ");
 		String data1_final = data1.replace("Z", "");
 		char validacao;
+		
 		if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 				&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-			validacao = 'v';
+			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));;
 		} else {
-			validacao = 'i';
+			validacao = 's';
 		}
+		System.out.println("Limite Superior : "+limiteSuperior + " , Limite Inferior : " + limiteInferior +", Valor : " + Double.parseDouble(data_medicao[1])+" ,Validacao : "+validacao);
 		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[1]
 				+ "','" + validacao + "');";
 		try {
 			statementLocalhost.executeUpdate(procedMedicaoInsert);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 	public void messageArrived(String var1, MqttMessage message) throws Exception {
-		System.out.println(cloud_topic + ": Entrei " + message.toString());
+		threadChecker.interrupt();
+		//System.out.println(cloud_topic + ": Entrei " + message.toString());
 		dealWithData(message.toString());
 
 	}
@@ -149,11 +158,11 @@ public class CloudToSQL extends Thread implements MqttCallback {
 						try {
 							ResultSet result = statementCloud.executeQuery(sqlQuery);
 							while (result.next()) {
-								double limSup = result.getDouble(3);
-								double limInf = result.getDouble(4);
+								double limSup = result.getDouble(4);
+								double limInf = result.getDouble(3);
 								System.out.println(
 										String.valueOf(tipoDoSensor).toUpperCase() + idSensor + ": Limite Superior : "
-												+ result.getString(3) + " Limite Inferior : " + result.getString(4));
+												+ result.getString(4) + " Limite Inferior : " + result.getString(3));
 								if (limSup != limiteSuperior) {
 									limiteSuperior = limSup;
 								}
@@ -172,23 +181,29 @@ public class CloudToSQL extends Thread implements MqttCallback {
 				} catch (InterruptedException e) {
 					System.out.println("Algo me interrompeu enquanto dormia");
 				}
-			}else {
-				while(true)
-				try {
-//					CALL `criar_alerta`(NULL, NULL, 'Alerta Valor de Medição Fora dos Limites do Sensor', 'Foi registada uma medição com um valor que ultrapassa os limites de hardware do sensor.');
-
-					sleep(checkTime);
-				}catch (InterruptedException e) {
-					System.out.println("");
-				}
+			} else {
+				while (true)
+					try {
+						sleep(checkTime);
+						valida.clear();
+						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "+checkTime/1000+" segundos.')";
+						try {
+							statementLocalhost.executeUpdate(sqlQuery);
+							
+						} catch (SQLException e) {
+							System.out.println("erro na querySQL");
+						}
+						
+					} catch (InterruptedException e) {
+						System.out.println("Recebeu Mensagem");
+					}
 			}
 
 		}
 	}
 
-//	public static void main(String[] args) {
-//
-//
-//		new CloudToSQL(3,"1","T",2.0,50.0).start();
-//	}
+	public static void main(String[] args) {
+
+		new CloudToSQL(3, "1", "T", 2.0, 50.0).start();
+	}
 }
