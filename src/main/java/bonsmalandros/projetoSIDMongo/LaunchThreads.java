@@ -52,13 +52,9 @@ public class LaunchThreads {
 
 	private void startThreads(Iterable<String> listCollections) {
 		for (String collection : listCollections) {
-			DirectMongoToSQL thread = new DirectMongoToSQL(collection.substring(6), mongo_database, mongo_uri); // Exemplo
-																												// de
-																												// formato
-																												// collection
-																												// -> h1
+			DirectMongoToSQL thread = new DirectMongoToSQL(collection, mongo_database, mongo_uri);
 			threads.add(thread);
-			thread.run();
+			thread.start();
 		}
 	}
 
