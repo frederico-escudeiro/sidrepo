@@ -74,15 +74,15 @@ public class LancaThreadsPC2 implements MqttCallback {
         map.put(collections[0],6); //t2
 
 
-        try {
+        /*try {
             for (String collection : collections) {
                 System.out.println("sid_g4_aaedfj_" + collection);                                                //E
-                CloudToSQL c2s = new CloudToSQL("sid_g4_aaedfj_" + collection,map.get(collection));
-                c2s.start();
-                c2s.join();
+                //CloudToSQL c2s = new CloudToSQL("sid_g4_aaedfj_" + collection,map.get(collection));
+                //c2s.start();
+                //c2s.join();
             }
         }catch(InterruptedException e){
             System.out.println("Interrompidas as Threads");
-        }
+        }*/
     }
 }
