@@ -27,7 +27,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 
     private String cloud_server;
     private String cloud_topic;
-    private String client_name = "sid_2021_aadefj"; 
+    private String client_name; 
 
     private String mongo_user;
     private String mongo_password;
@@ -44,17 +44,15 @@ public class MongoToCloud extends Thread implements MqttCallback {
     private Date lateDate= new Date();
     private long timeDifMilliSeconds = 1000;			//delay na inserção e leitura de dados (1 segundo)
 
-    // variaveis de tempo
-    private long startTime = System.nanoTime();
-    private long endTime = System.nanoTime();
-    private long nanoToMilli = 1000000;
 
-    public MongoToCloud(String collection, String topic){
+    public MongoToCloud(String collection){
         try {
             Properties properties = new Properties();
             properties.load(new FileInputStream("MongoToCloud.ini"));
             cloud_server = properties.getProperty("cloud_server");
-            cloud_topic = topic;
+            cloud_topic = properties.getProperty("cloud_topic")+ "_" + collection.substring(6).toUpperCase();
+            System.out.println(cloud_topic);
+            client_name = properties.getProperty("client_name");
             mongo_address = properties.getProperty("mongo_address");
             mongo_database = properties.getProperty("mongo_database");
             mongo_collection = collection;
@@ -62,10 +60,11 @@ public class MongoToCloud extends Thread implements MqttCallback {
             mongo_password = properties.getProperty("mongo_password");
             mongo_authentication = properties.getProperty("mongo_authentication");
             mongo_replica = properties.getProperty("mongo_replica");
-
+            connectToBroker();
         } catch (Exception properties) {
             System.out.println("Error reading MongoToCloud.ini file " + properties);
         }
+        
     }
 
     protected String getSaltString() {
@@ -150,7 +149,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
             if(!listDocuments.isEmpty()){
                 writeSensor(listDocuments);
             }
-            System.out.println("Intervalo: "+ lateDate +" -> "+currentDate);
+            System.out.println(cloud_topic + ": Intervalo: "+ lateDate +" -> "+currentDate);
             try {
                 time = ((new Date()).getTime() - timeDifMilliSeconds)/1000;
                 time = time * 1000;
