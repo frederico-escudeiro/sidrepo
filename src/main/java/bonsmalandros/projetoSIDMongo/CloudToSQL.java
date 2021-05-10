@@ -1,3 +1,4 @@
+
 package bonsmalandros.projetoSIDMongo;
 
 import java.io.FileInputStream;
@@ -206,3 +207,4 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		new CloudToSQL(3, "1", "T", 2.0, 50.0).start();
 	}
 }
+
