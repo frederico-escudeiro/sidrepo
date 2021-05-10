@@ -119,7 +119,7 @@ public class MongoToSQL extends Thread {
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 			collection.find(filterLowAndUp).into(listDocuments);
 			if (!listDocuments.isEmpty()) {
-				;
+				dealWithDataToSQL(listDocuments);
 			}
 			System.out.println(/* cloud_topic + */ ": Intervalo: " + lateDate + " -> " + currentDate);
 			try {
@@ -135,6 +135,39 @@ public class MongoToSQL extends Thread {
 
 		}
 
+	}
+	
+	private void dealWithDataToSQL(List<Document> listDocuments) {
+		for(Document document: listDocuments) {
+			String jsonString = document.toJson();
+			//JSON Parser
+			String data_medicao_1 = jsonString.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
+			String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
+			String data_medicao_3 = data_medicao_2.replace("\" }", "");
+			String[] data_medicao = data_medicao_3.split(" ");
+
+			//System.out.println("Deal with Data: " + data_medicao[0] + " " + data_medicao[1]);
+			String data1 = data_medicao[0].replace("T", " ");
+			String data1_final = data1.replace("Z", "");
+			
+			//Limites Sensor
+			char validacao;
+			if (Double.parseDouble(data_medicao[1]) < limiteSuperior
+					&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
+				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));;
+			} else {
+				validacao = 's';
+			}
+			System.out.println("Limite Superior : "+limiteSuperior + " , Limite Inferior : " + limiteInferior +", Valor : " + Double.parseDouble(data_medicao[1])+" ,Validacao : "+validacao);
+			String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','" + data_medicao[1]
+					+ "','" + validacao + "');";
+			try {
+				statementLocalhost.executeUpdate(procedMedicaoInsert);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 	private class CheckerThread extends Thread {
 		private int checkTime;
