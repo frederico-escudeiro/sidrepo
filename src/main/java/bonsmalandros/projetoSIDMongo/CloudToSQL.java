@@ -37,7 +37,6 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior) {
 		try {
-
 			Properties properties = new Properties();
 			properties.load(new FileInputStream("CloudToSQL.ini"));
 			cloud_server = properties.getProperty("cloud_server");
