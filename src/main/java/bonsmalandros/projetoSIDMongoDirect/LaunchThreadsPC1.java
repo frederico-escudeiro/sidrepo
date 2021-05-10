@@ -35,6 +35,13 @@ public class LaunchThreadsPC1 {
 	private double limiteInferior;
 	private double limiteSuperior;
 	private String sql_uri;
+	private String user_sql;
+	private String pass_sql;
+	private String user_sql_cloud;
+	private String pass_sql_cloud;
+	private String sql_uri_cloud;
+	private int check_if_gets_message;
+	private int check_sql_cloud;
 	private static Connection connectionLocalhost;
 	private static Statement statementLocalhost;
 	private static Connection connectionCloud;
@@ -47,25 +54,36 @@ public class LaunchThreadsPC1 {
 			// => Rapidez ao iniciar.
 			Properties properties = new Properties();
 			properties.load(new FileInputStream("DirectMongoToSQL.ini"));
+			
 			mongo_address = properties.getProperty("mongo_address");
 			mongo_database = properties.getProperty("mongo_database");
 			mongo_user = properties.getProperty("mongo_user");
 			mongo_password = properties.getProperty("mongo_password");
 			mongo_authentication = properties.getProperty("mongo_authentication");
 			mongo_replica = properties.getProperty("mongo_replica");
+			
+			sql_uri = properties.getProperty("SQL") +properties.getProperty("ip_SQL") + properties.getProperty("database_SQL");
+			user_sql = properties.getProperty("user_SQL");
+			pass_sql = properties.getProperty("pass_SQL");
+			
+			sql_uri_cloud = properties.getProperty("SQL_Cloud");
+			user_sql_cloud = properties.getProperty("user_SQL_Cloud");
+			pass_sql_cloud = properties.getProperty("pass_SQL_Cloud");
+			
+			check_sql_cloud = Integer.parseInt(properties.getProperty("check_SQL_Cloud"));
+			check_if_gets_message = Integer.parseInt(properties.getProperty("check_if_gets_message"));
+			
 			connectionCloud = DriverManager.getConnection(properties.getProperty("SQL_Cloud"), properties.getProperty("user_SQL_Cloud"), properties.getProperty("pass_SQL_Cloud"));																					// ler
 			statementCloud = connectionCloud.createStatement();
 			String sqlGetSensor = "SELECT * FROM `sensor`";
 			result = statementCloud.executeQuery(sqlGetSensor);
-			sql_uri = properties.getProperty("SQL") +properties.getProperty("ip_SQL") + properties.getProperty("database_SQL");
-		} catch (SQLException e) {
+			} catch (SQLException e) {
 			System.out.println("Erro com a ligação ao Professor SQL");
 		}catch (IOException e) {
 			System.out.println("Erro com o ficheiro CloudToSQL.ini");
 		}catch (Exception properties) {
 			System.out.println("Error reading DirectMongoToSQL.ini file " + properties);
 		}
-		
 		mongo_uri = getMongoURI();
 	}
 
@@ -84,20 +102,24 @@ public class LaunchThreadsPC1 {
 		int sensorID = 1; 
 		for (String collection : listCollections) {
 			
-		
+			MongoToSQL thread;
 			try {
 				System.out.println("IDSensor: "+sensorID+" ,Zona : " + result.getString(1) + " ,Sensor :" + result.getString(2)+" ,Limite inferior: "+result.getDouble(3)+" ,Limite Superior: "+result.getDouble(4));
 		
-			
-			sensorID = sensorID+1;
+				thread = new MongoToSQL(mongo_database, mongo_uri,sql_uri, user_sql,pass_sql,
+						sql_uri_cloud,user_sql_cloud,pass_sql_cloud,check_sql_cloud,
+						check_if_gets_message,sensorID,result.getString(1),result.getString(2),
+						result.getDouble(3),result.getDouble(4));
+				
+				sensorID++;
+				threads.add(thread);
+				thread.start();
 			
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			MongoToSQL thread = new MongoToSQL(collection, mongo_database, mongo_uri, sensorID,result.getString(1),result.getString(2),result.getDouble(3),result.getDouble(4));
-			threads.add(thread);
-			thread.start();
+			
 		}
 		
 	}
