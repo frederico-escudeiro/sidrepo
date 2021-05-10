@@ -47,6 +47,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 
     public MongoToCloud(String collection){
         try {
+
             Properties properties = new Properties();
             properties.load(new FileInputStream("MongoToCloud.ini"));
             cloud_server = properties.getProperty("cloud_server");
