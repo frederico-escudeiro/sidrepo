@@ -1,6 +1,8 @@
 package bonsmalandros.projetoSIDMongoDirect;
 
 import java.io.FileInputStream;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -17,7 +19,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 
-public class MongoToDirect extends Thread {
+public class MongoToSQL extends Thread {
 	private String mongo_collection;
 	private String mongo_database;
 	private String mongo_uri;
@@ -31,14 +33,25 @@ public class MongoToDirect extends Thread {
 
 	
 	/* TODO FALTA ADICIONAR OS PARAMETROS SQL */
-	public MongoToDirect(String collection, String mongo_database, String mongo_uri) {
+	public MongoToSQL(String collection, String mongo_database, String mongo_uri, int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior) {
 		mongo_collection = collection;
 		this.mongo_database = mongo_database;
 		this.mongo_uri = mongo_uri;
 		
 	}
 
-	
+	void connectToSQL(String SQLDataBaseURI, String user, String pwd, boolean isLocal)
+			throws SQLException, ClassNotFoundException {
+		if (isLocal) {
+			connectionLocalhost = DriverManager.getConnection(SQLDataBaseURI, user, pwd);
+			statementLocalhost = connectionLocalhost.createStatement();
+		} else {
+			connectionCloud = DriverManager.getConnection(SQLDataBaseURI, user, pwd);
+			statementCloud = connectionCloud.createStatement();
+
+		}
+	}
+
 	public void run() {
 		 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
 	        MongoClient client = new MongoClient(new MongoClientURI(mongo_uri));
