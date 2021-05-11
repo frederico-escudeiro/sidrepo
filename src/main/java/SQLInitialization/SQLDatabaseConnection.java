@@ -260,9 +260,15 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que lista culturas
             String dropProcedimentoListarCulturas = "DROP PROCEDURE IF EXISTS `listar_culturas`";
-            String createUtilizadorProcedureListarCulturas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_culturas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)) and cultura.isValido=1; END";
+            String createUtilizadorProcedureListarCulturas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_culturas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)); END";
             statementLocalhost.executeUpdate(dropProcedimentoListarCulturas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarCulturas);
+            
+            //criar procedimento que lista culturas válidas
+            String dropProcedimentoListarCulturasValidas = "DROP PROCEDURE IF EXISTS `listar_culturas_validas`";
+            String createUtilizadorProcedureListarCulturasValidas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_culturas_validas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)) and cultura.isValido=1; END";
+            statementLocalhost.executeUpdate(dropProcedimentoListarCulturasValidas);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureListarCulturasValidas);
 
             //criar procedimento que lista medicoes
             String dropProcedimentoListarMedicoes = "DROP PROCEDURE IF EXISTS `listar_medicoes`";
@@ -532,6 +538,7 @@ public class SQLDatabaseConnection {
             String privilegiosAtualizarAlertasProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.atualizar_alertas TO 'investigador'";
             String privilegiosListarAlertasProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_alertas TO 'investigador'";
             String privilegiosListarCulturasProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_culturas TO 'investigador'";
+            String privilegiosListarCulturasValidasProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_culturas_validas TO 'investigador'";
             String privilegiosListarMedicoesProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_medicoes TO 'investigador'";
             String privilegiosMostraCulturaProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.mostra_cultura TO 'investigador'";
             String privilegiosMostraUtilizadorProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.mostra_utilizador TO 'investigador'";
@@ -542,6 +549,7 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(privilegiosAtualizarAlertasProcedureInvestigador);
             statementLocalhost.executeUpdate(privilegiosListarAlertasProcedureInvestigador);
             statementLocalhost.executeUpdate(privilegiosListarCulturasProcedureInvestigador);
+            statementLocalhost.executeUpdate(privilegiosListarCulturasValidasProcedureInvestigador);
             statementLocalhost.executeUpdate(privilegiosListarMedicoesProcedureInvestigador);
             statementLocalhost.executeUpdate(privilegiosMostraCulturaProcedureInvestigador);
             statementLocalhost.executeUpdate(privilegiosMostraUtilizadorProcedureInvestigador);
@@ -562,6 +570,7 @@ public class SQLDatabaseConnection {
             String privilegiosAtualizarAlertasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.atualizar_alertas TO 'administrador'";
             String privilegiosListarAlertasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_alertas TO 'administrador'";
             String privilegiosListarCulturasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_culturas TO 'administrador'";
+            String privilegiosListarCulturasValidasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_culturas_validas TO 'administrador'";
             String privilegiosListarMedicoesProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_medicoes TO 'administrador'";
             String privilegiosMostraCulturaProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.mostra_cultura TO 'administrador'";
             String privilegiosMostraUtilizadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.mostra_utilizador TO 'administrador'";
@@ -580,6 +589,7 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(privilegiosAtualizarAlertasProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosListarAlertasProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosListarCulturasProcedureAdministrador);
+            statementLocalhost.executeUpdate(privilegiosListarCulturasValidasProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosListarMedicoesProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosMostraCulturaProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosMostraUtilizadorProcedureAdministrador);
