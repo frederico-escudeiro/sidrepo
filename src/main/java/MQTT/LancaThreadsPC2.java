@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongo;
+package MQTT;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,14 +30,12 @@ public class LancaThreadsPC2 {
 						+ result.getDouble(4));
 				CloudToSQL cloudToSQL = new CloudToSQL(sensorID, result.getString(1), result.getString(2),
 						result.getDouble(3), result.getDouble(4), properties.getProperty("cloud_server"),
-						properties.getProperty("cloud_topic"), properties.getProperty("SQL"),
-						properties.getProperty("user_SQL"), properties.getProperty("pass_SQL"),
-						properties.getProperty("SQL_Cloud"), properties.getProperty("user_SQL_Cloud"),
-						properties.getProperty("pass_SQL_Cloud"),
-						Integer.parseInt(properties.getProperty("check_SQL_Cloud")),
-						Integer.parseInt(properties.getProperty("check_SQL_Cloud"),
-								Integer.parseInt(properties.getProperty("check_SQL_Cloud"))));
-				// cloudToSQL.start();
+						properties.getProperty("cloud_topic"), properties.getProperty("SQL_Cloud"),
+						properties.getProperty("user_SQL_Cloud"), properties.getProperty("pass_SQL_Cloud"),
+						properties.getProperty("SQL"), properties.getProperty("user_SQL"),
+						properties.getProperty("pass_SQL"), Integer.parseInt(properties.getProperty("check_SQL_Cloud")),
+						Integer.parseInt(properties.getProperty("check_SQL_Cloud")));
+				cloudToSQL.start();
 				sensorID = sensorID + 1;
 			}
 		} catch (SQLException e) {

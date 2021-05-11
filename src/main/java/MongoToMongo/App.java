@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongo;
+package MongoToMongo;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

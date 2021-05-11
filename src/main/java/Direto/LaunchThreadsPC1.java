@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongoDirect;
+package Direto;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,7 +16,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
 
-import bonsmalandros.projetoSIDMongo.CloudToSQL;
+import MQTT.CloudToSQL;
 
 public class LaunchThreadsPC1 {
 

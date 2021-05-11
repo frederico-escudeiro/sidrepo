@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongo;
+package MongoToMongo;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

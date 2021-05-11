@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongo;
+package MQTT;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -8,7 +8,6 @@ public class ValidaMedicoes {
 	private LinkedList<Double> ultimasMedicoes = new LinkedList<>();
 	private static final int size = 5;
 	private double max;
-	private double mediana;
 	private double min;
 
 	public ValidaMedicoes() {
@@ -35,7 +34,6 @@ public class ValidaMedicoes {
 		Collections.sort(list);
 		max = list.getLast();
 		min = list.getFirst();
-		mediana = list.get(list.size() / 2);
 	}
 
 	public char getValidacao(double valorMedicao) {

@@ -1,5 +1,5 @@
 
-package bonsmalandros.projetoSIDMongo;
+package MQTT;
 
 import java.io.FileInputStream;
 import java.sql.Connection;
@@ -37,8 +37,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private ValidaMedicoes valida;
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
-			String cloud_server, String cloud_topic, String SQL_prof, String SQL_profUser, String SQL_profPass,
-			String SQL, String SQL_User, String SQL_Pass, int timerCheckCloud, int timerCheckIfGetsMessages) {
+			String cloud_server, String cloud_topic, String SQL_prof_uri, String SQL_profUser, String SQL_profPass,
+			String SQL_uri, String SQL_User, String SQL_Pass, int timerCheckCloudProf, int timerCheckIfGetsMessages) {
 		try {
 			this.cloud_server = cloud_server;
 			this.tipoDoSensor = tipoSensor.charAt(0);
@@ -48,9 +48,9 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			this.limiteSuperior = limiteSuperior;
 			this.cloud_topic = cloud_topic + "_" + tipoSensor + idZona;
 			System.out.println(cloud_topic);
-			connectToSQL(SQL, SQL_User, SQL_Pass, true);
-			connectToSQL(SQL_prof, SQL_profUser, SQL_profPass, false);
-			new CheckerThread(timerCheckCloud, true).start();
+			connectToSQL(SQL_uri, SQL_User, SQL_Pass, true);
+			connectToSQL(SQL_prof_uri, SQL_profUser, SQL_profPass, false);
+			new CheckerThread(timerCheckCloudProf, true).start();
 			threadChecker = new CheckerThread(timerCheckIfGetsMessages, false);
 			valida = new ValidaMedicoes();
 			threadChecker.start();
@@ -110,7 +110,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 		if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 				&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
+			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));// i ou v 
 			;
 		} else {
 			validacao = 's';
@@ -125,20 +125,20 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			e.printStackTrace();
 		}
 	}
-
+	//metodo da interface
 	public void messageArrived(String var1, MqttMessage message) throws Exception {
 		threadChecker.interrupt();
 		// System.out.println(cloud_topic + ": Entrei " + message.toString());
 		dealWithData(message.toString());
 
 	}
-
+	//metodo da interface
 	public void connectionLost(Throwable var1) {
 	}
-
+	//metodo da interface
 	public void deliveryComplete(IMqttDeliveryToken var1) {
 	}
-
+	//CheckProfessorCloudSensorThread 	CheckSensorReadingTimeoutThread
 	private class CheckerThread extends Thread {
 		private int checkTime;
 		private boolean isCheckSQL;
