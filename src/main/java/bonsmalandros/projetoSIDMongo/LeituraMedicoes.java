@@ -201,7 +201,6 @@ public class LeituraMedicoes extends Thread{
 							dados.add(doc);
 	        		
 					} catch (Exception e) {
-					// TODO Auto-generated catch block
 						e.printStackTrace();
 					
 					}
