@@ -36,29 +36,26 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private CheckerThread threadChecker;
 	private ValidaMedicoes valida;
 
-	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior) {
+	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
+			String cloud_server, String cloud_topic, String SQL_prof, String SQL_profUser, String SQL_profPass,
+			String SQL, String SQL_User, String SQL_Pass, int timerCheckCloud, int timerCheckIfGetsMessages) {
 		try {
-			Properties properties = new Properties();
-			properties.load(new FileInputStream("CloudToSQL.ini"));
-			cloud_server = properties.getProperty("cloud_server");
+			this.cloud_server = cloud_server;
 			this.tipoDoSensor = tipoSensor.charAt(0);
 			idZona = Integer.parseInt(zonaID);
 			this.idSensor = sensorID;
 			this.limiteInferior = limiteInferior;
 			this.limiteSuperior = limiteSuperior;
-			cloud_topic = properties.getProperty("cloud_topic") + "_" + tipoSensor + idZona;
+			this.cloud_topic = cloud_topic + "_" + tipoSensor + idZona;
 			System.out.println(cloud_topic);
-			connectToSQL(properties.getProperty("SQL"), properties.getProperty("user_SQL"),
-					properties.getProperty("pass_SQL"), true);
-			connectToSQL(properties.getProperty("SQL_Cloud"), properties.getProperty("user_SQL_Cloud"),
-					properties.getProperty("pass_SQL_Cloud"), false);
-			new CheckerThread(Integer.parseInt(properties.getProperty("check_SQL_Cloud")), true).start();
-			threadChecker = new CheckerThread(Integer.parseInt(properties.getProperty("check_SQL_Cloud")), false);
+			connectToSQL(SQL, SQL_User, SQL_Pass, true);
+			connectToSQL(SQL_prof, SQL_profUser, SQL_profPass, false);
+			new CheckerThread(timerCheckCloud, true).start();
+			threadChecker = new CheckerThread(timerCheckIfGetsMessages, false);
 			valida = new ValidaMedicoes();
 			threadChecker.start();
-		} catch (Exception e) {
-			System.out.println("Error reading CloudToSQL.ini file ");
-			e.printStackTrace();
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Erro no connect");
 		}
 
 	}
@@ -95,7 +92,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	}
 
 	void dealWithData(String message) {
-		//System.out.println(message);
+		// System.out.println(message);
 		// String[] data_medicao = message.split("(\\{\"Tempo\": \\{\"\\$date\":
 		// \")|(\"\\}, \"Medicao\": )|(\\})");
 
@@ -105,18 +102,21 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		String data_medicao_3 = data_medicao_2.replace("\" }", "");
 		String[] data_medicao = data_medicao_3.split(" ");
 
-		//System.out.println("Deal with Data: " + data_medicao[0] + " " + data_medicao[1]);
+		// System.out.println("Deal with Data: " + data_medicao[0] + " " +
+		// data_medicao[1]);
 		String data1 = data_medicao[0].replace("T", " ");
 		String data1_final = data1.replace("Z", "");
 		char validacao;
-		
+
 		if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 				&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));;
+			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
+			;
 		} else {
 			validacao = 's';
 		}
-		System.out.println("Limite Superior : "+limiteSuperior + " , Limite Inferior : " + limiteInferior +", Valor : " + Double.parseDouble(data_medicao[1])+" ,Validacao : "+validacao);
+		System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
+				+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
 		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[1]
 				+ "','" + validacao + "');";
 		try {
@@ -128,7 +128,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 	public void messageArrived(String var1, MqttMessage message) throws Exception {
 		threadChecker.interrupt();
-		//System.out.println(cloud_topic + ": Entrei " + message.toString());
+		// System.out.println(cloud_topic + ": Entrei " + message.toString());
 		dealWithData(message.toString());
 
 	}
@@ -186,14 +186,15 @@ public class CloudToSQL extends Thread implements MqttCallback {
 					try {
 						sleep(checkTime);
 						valida.clear();
-						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "+checkTime/1000+" segundos.')";
+						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
+								+ checkTime / 1000 + " segundos.')";
 						try {
 							statementLocalhost.executeUpdate(sqlQuery);
-							
+
 						} catch (SQLException e) {
 							System.out.println("erro na querySQL");
 						}
-						
+
 					} catch (InterruptedException e) {
 						System.out.println("Recebeu Mensagem");
 					}
@@ -204,7 +205,6 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 	public static void main(String[] args) {
 
-		new CloudToSQL(3, "1", "T", 2.0, 50.0).start();
+		// new CloudToSQL(3, "1", "T", 2.0, 50.0).start();
 	}
 }
-
