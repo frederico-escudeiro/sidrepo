@@ -43,7 +43,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaSensor() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT, `limiteSup` DOUBLE NOT NULL , `limiteInf` DOUBLE NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `sensor` ADD  CONSTRAINT `sensor-zona` FOREIGN KEY (`idZona`) REFERENCES `zona`(`idZona`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
         statementLocalhost.executeUpdate(addForeignKey);
@@ -506,14 +506,12 @@ public class SQLDatabaseConnection {
             int idSensor = 1;
             while (resultSetCLoud.next()) {
                 //Inserir os valores na tabela 'sensor'
-                String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ('" +
+            	String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`) VALUES ('" +
                         idSensor + "', '" +
                         resultSetCLoud.getString(2) + "', '" +
-                        Integer.parseInt(resultSetCLoud.getString(5)) + "', '" +
-                        Double.parseDouble(resultSetCLoud.getString(4)) + "', '" +
-                        Double.parseDouble(resultSetCLoud.getString(3)) + "') " +
-                        "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`), " +
-                        "`limiteSup`=VALUES(`limiteSup`), `limiteInf`=VALUES(`limiteInf`)";
+                        Integer.parseInt(resultSetCLoud.getString(5)) + "') " +
+
+                        "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`)";
                 idSensor++;
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
