@@ -9,7 +9,6 @@ public class SQLDatabaseConnection {
     private static Statement statementLocalhost;
     private static Statement statementCloud;
     private static final String dbName = "sid2021";
-    private static final double outlierTemperatura = 1.0;
 
 
     private static boolean databaseExists() throws SQLException {
@@ -44,7 +43,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaSensor() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`sensor` (`idSensor` INT NOT NULL PRIMARY KEY,`tipoSensor` CHAR(1) NOT NULL , `idZona` INT, `limiteSup` DOUBLE NOT NULL , `limiteInf` DOUBLE NOT NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `sensor` ADD  CONSTRAINT `sensor-zona` FOREIGN KEY (`idZona`) REFERENCES `zona`(`idZona`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
         statementLocalhost.executeUpdate(addForeignKey);
@@ -138,7 +137,6 @@ public class SQLDatabaseConnection {
             //criar procedimento da medicao
             String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `criar_medicao`";
             String createMedicaoProcedure = "CREATE PROCEDURE `criar_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
-
             statementLocalhost.executeUpdate(dropProcedimentoMedicao);
             statementLocalhost.executeUpdate(createMedicaoProcedure);
 
@@ -248,59 +246,41 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropProcedimentoUtilizador);
             statementLocalhost.executeUpdate(createUtilizadorProcedure);
 
-            /*//criar trigger do limite de alerta
-            String dropTriggerLimiteAlerta = "DROP TRIGGER IF EXISTS `alerta_cultura`";
-            String createAlertaTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_cultura` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN \n" +
-                    "DECLARE id int; \n" +
-                    "DECLARE isRiscoModerado int; \n" +
-                    "CREATE TEMPORARY TABLE items (idCultura int); \n" +
-                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor); \n" +
-                    "\n" +
-                    "IF @tipo = 'T' THEN \n" +
-                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.tempLimInfAlerta OR new.valorMedicao>=cultura.tempLimSupAlerta)); \n" +
-                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
-                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
-                    "DELETE FROM items WHERE (idCultura = @id); \n" +
-                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.tempLimSup AND new.valorMedicao>cultura.tempLimSupAlerta) OR (new.valorMedicao>cultura.tempLimInf AND new.valorMedicao<cultura.tempLimInfAlerta)); \n" +
-                    "IF isRiscoModerado>0 THEN\n" +
-                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Temperatura', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da temperatura tolerável pela cultura.');\n" +
-                    "ELSE \n" +
-                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Temperatura Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da temperatura tolerável pela cultura.');\n" +
-                    "END IF;\n" +
-                    "END WHILE; \n" +
-                    "END IF; \n" +
-                    "\n" +
-                    "IF @tipo = 'H' THEN \n" +
-                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.humLimInfAlerta OR new.valorMedicao>=cultura.humLimSupAlerta)); \n" +
-                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
-                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
-                    "DELETE FROM items WHERE (idCultura = @id);\n" +
-                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<cultura.humLimInfAlerta)); \n" +
-                    "IF isRiscoModerado>0 THEN\n" +
-                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Humidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da humidade tolerável pela cultura.');\n" +
-                    "ELSE\n" +
-                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Humidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites de humidade tolerável pela cultura.');\n" +
-                    "END IF;\n" +
-                    "END WHILE; \n" +
-                    "END IF; \n" +
-                    "\n" +
-                    "IF @tipo = 'L' THEN \n" +
-                    "INSERT INTO items (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao AND (new.valorMedicao<=cultura.lumLimInfAlerta OR new.valorMedicao>=cultura.lumLimSupAlerta)); \n" +
-                    "WHILE EXISTS(SELECT * FROM items) DO \n" +
-                    "SET @id := (SELECT * FROM items LIMIT 1); \n" +
-                    "DELETE FROM items WHERE (idCultura = @id); \n" +
-                    "SELECT COUNT(*) into isRiscoModerado FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.lumLimSup AND new.valorMedicao>cultura.lumLimSupAlerta) OR (new.valorMedicao>cultura.lumLimInf AND new.valorMedicao<cultura.lumLimInfAlerta)); \n" +
-                    "IF isRiscoModerado>0 THEN\n" +
-                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Luminosidade', 'Foi registada uma medição com um valor que ultrapassa os limites de alerta, mas ainda se encontra dentro da luminosidade tolerável pela cultura.');\n" +
-                    "ELSE\n" +
-                    "CALL `Create_Alerta`(@id, new.idMedicao , 'Alerta Limite Luminosidade Ultrapassado', 'Foi registada uma medição com um valor que ultrapassa os limites da luminosidade tolerável pela cultura.');\n" +
-                    "END IF;\n" +
-                    "END WHILE; \n" +
-                    "END IF; \n" +
-                    "DROP TEMPORARY TABLE items; \n" +
-                    "END";
-            statementLocalhost.executeUpdate(dropTriggerLimiteAlerta);
-            statementLocalhost.executeUpdate(createAlertaTrigger);*/
+            //criar procedimento que atualiza a lista de alertas mostrada
+            String dropProcedimentoAtualizarAlertas = "DROP PROCEDURE IF EXISTS `atualizar_alertas`";
+            String createUtilizadorProcedureAtualizarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND medicao.tempo > tempo; END";
+            statementLocalhost.executeUpdate(dropProcedimentoAtualizarAlertas);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureAtualizarAlertas);
+
+            //criar procedimento que lista alertas
+            String dropProcedimentoListarAlertas = "DROP PROCEDURE IF EXISTS `listar_alertas`";
+            String createUtilizadorProcedureListarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta, alerta.mensagem, medicao.tempo, medicao.valorMedicao, cultura.idZona, cultura.nomeCultura, cultura.idCultura, sensor.tipoSensor, utilizador.idUtilizador FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND DATE(medicao.tempo) = date; END";
+            statementLocalhost.executeUpdate(dropProcedimentoListarAlertas);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureListarAlertas);
+
+            //criar procedimento que lista culturas
+            String dropProcedimentoListarCulturas = "DROP PROCEDURE IF EXISTS `listar_culturas`";
+            String createUtilizadorProcedureListarCulturas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_culturas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)); END";
+            statementLocalhost.executeUpdate(dropProcedimentoListarCulturas);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureListarCulturas);
+
+            //criar procedimento que lista medicoes
+            String dropProcedimentoListarMedicoes = "DROP PROCEDURE IF EXISTS `listar_medicoes`";
+            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE medicao.tempo >= now() - interval 5 minute ORDER BY medicao.tempo ASC; END";
+            statementLocalhost.executeUpdate(dropProcedimentoListarMedicoes);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureListarMedicoes);
+
+            //criar procedimento que mostra cultura
+            String dropProcedimentoMostraCultura = "DROP PROCEDURE IF EXISTS `mostra_cultura`";
+            String createUtilizadorProcedureMostraCultura = "CREATE DEFINER=`root`@`localhost` PROCEDURE `mostra_cultura`(IN `idCultura` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT nomeCultura,idZona,nomeUtilizador, lumLimSup, lumLimInf, tempLimSup, tempLimInf, humLimSup, humLimInf, lumLimSupAlerta, lumLimInfAlerta, tempLimSupAlerta, tempLimInfAlerta, humLimSupAlerta, humLimInfAlerta FROM cultura, utilizador WHERE cultura.idUtilizador=utilizador.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND cultura.idCultura=idCultura; END";
+            statementLocalhost.executeUpdate(dropProcedimentoMostraCultura);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureMostraCultura);
+
+            //criar procedimento que mostra utilizador
+            String dropProcedimentoMostraUtilizador = "DROP PROCEDURE IF EXISTS `mostra_utilizador`";
+            String createUtilizadorProcedureMostraUtilizador = "CREATE DEFINER=`root`@`localhost` PROCEDURE `mostra_utilizador`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT nomeUtilizador, intervaloMinimoAvisos FROM utilizador WHERE email=(select substring_index(user(),'@localhost', 1)); END";
+            statementLocalhost.executeUpdate(dropProcedimentoMostraUtilizador);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureMostraUtilizador);
 
             //criar trigger do limite de alerta de temperatura
             String dropTriggerAlertaTemperatura = "DROP TRIGGER IF EXISTS `alerta_temperatura`";
@@ -503,57 +483,6 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropTriggerAlertaSensor);
             statementLocalhost.executeUpdate(createTriggerAlertaSensor);
 
-            //criar trigger do valor fora do limite do sensor
-/*            String dropTriggerValorInvalido = "DROP TRIGGER IF EXISTS `valor_invalido`";
-            String createForaDoLimiteTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `valor_invalido` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN DECLARE nInvalidos integer; SELECT COUNT(*) into nInvalidos FROM sensor, medicao WHERE sensor.idSensor=new.idSensor AND (sensor.limiteSup<new.valorMedicao OR sensor.limiteInf>new.valorMedicao); IF nInvalidos>0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Valor inválido recusado!'; END IF; END;";
-            statementLocalhost.executeUpdate(dropTriggerValorInvalido);
-            statementLocalhost.executeUpdate(createForaDoLimiteTrigger);
-*/
-
-
-            //criar trigger para outliers
-            /*
-            String dropTriggerValidacaoTemp = "DROP TRIGGER IF EXISTS `validacao_temperatura`";
-            String createValidacaoTempTrigger = "CREATE DEFINER=`root`@`localhost` TRIGGER `validacao_temperatura` BEFORE INSERT ON `medicao` FOR EACH ROW BEGIN\n" +
-                    "\n" +
-                    "CREATE TEMPORARY TABLE vetor (valorMedicao double); \n" +
-                    "\n" +
-                    "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\n" +
-                    "\n" +
-                    "SET @ultimaMedicao := (SELECT medicao.tempo FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 1);\n" +
-                    "\n" +
-                    "IF new.validacao = 'v' THEN\n" +
-
-                    "\n" +
-                    "IF @tipo = 'T' AND (SELECT TIMESTAMPDIFF(MINUTE, @ultimaMedicao,new.tempo))<10 THEN\n" +
-
-                    "INSERT INTO vetor (SELECT valorMedicao FROM medicao WHERE new.idSensor=medicao.idSensor ORDER BY medicao.idMedicao DESC LIMIT 5);\n" +
-                    "\n" +
-                    "\n" +
-                    "\n" +
-                    "SET @menorValor := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 0,1);\n" +
-                    "\n" +
-                    "SET @mediana := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 2,1);\n" +
-                    "\n" +
-                    "SET @maiorValor := (SELECT valorMedicao FROM vetor ORDER BY valorMedicao ASC LIMIT 4,1);\n" +
-                    "\n" +
-                    "IF (SELECT COUNT(*) FROM vetor)>4 THEN\n" +
-
-                    "\t\tSET @limiteInf := (@mediana - @menorValor +" + outlierTemperatura + ");\n" +
-                    "        SET @limiteSup := (@maiorValor - @mediana +" + outlierTemperatura + ");\n" +
-                    "        IF (new.valorMedicao<(@mediana-@limiteInf) OR new.valorMedicao>(@mediana+@limiteSup)) THEN \n" +
-                    "SIGNAL SQLSTATE '02000' SET MESSAGE_TEXT = 'Call Procedure';" +
-                    "\t\t\tCALL `create_medicao`(new.idSensor , new.tempo, new.valorMedicao, 'i'); \n" +
-                    "\t\tEND IF;\n" +
-                    "END IF;\n" +
-                    "END IF;\n" +
-                    "END IF;\n" +
-                    "DROP TEMPORARY TABLE vetor;\n" +
-                    "END";
-            statementLocalhost.executeUpdate(dropTriggerValidacaoTemp);
-            statementLocalhost.executeUpdate(createValidacaoTempTrigger);
-            */
-
             //Ler a tabela 'zona'
             String selectSqlCloud = "SELECT * FROM `zona`";
             ResultSet resultSetCLoud = statementCloud.executeQuery(selectSqlCloud);
@@ -577,12 +506,14 @@ public class SQLDatabaseConnection {
             int idSensor = 1;
             while (resultSetCLoud.next()) {
                 //Inserir os valores na tabela 'sensor'
-                String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`) VALUES ('" +
+                String selectSqlLocalhost = "INSERT INTO `sensor` (`idSensor`,`tipoSensor`, `idZona`, `limiteSup`, `limiteInf`) VALUES ('" +
                         idSensor + "', '" +
                         resultSetCLoud.getString(2) + "', '" +
-                        Integer.parseInt(resultSetCLoud.getString(5)) + "') " +
-
-                        "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`)";
+                        Integer.parseInt(resultSetCLoud.getString(5)) + "', '" +
+                        Double.parseDouble(resultSetCLoud.getString(4)) + "', '" +
+                        Double.parseDouble(resultSetCLoud.getString(3)) + "') " +
+                        "ON DUPLICATE KEY UPDATE `tipoSensor`=VALUES(`tipoSensor`), `idZona`=VALUES(`idZona`), " +
+                        "`limiteSup`=VALUES(`limiteSup`), `limiteInf`=VALUES(`limiteInf`)";
                 idSensor++;
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
@@ -594,23 +525,16 @@ public class SQLDatabaseConnection {
             String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');";
             statementLocalhost.executeUpdate(insertAlerta);
 
+
             //Criar ROLE investigador
             String dropRoleInvestigador = "DROP ROLE IF EXISTS `investigador`;";
             String createInvestigador = "CREATE ROLE investigador;";
             String privilegiosProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_cultura TO 'investigador'";
             String privilegiosUserProcedureInvestigador = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_utilizador TO 'investigador'";
-            String privilegiosSelectCulturaInvestigador = "GRANT SELECT ON `sid2021`.`cultura` TO 'investigador';";
-            String privilegiosSelectUtilizadorInvestigador = "GRANT SELECT ON `sid2021`.`utilizador` TO 'investigador';";
-            String privilegiosSelectAlertaInvestigador = "GRANT SELECT ON `sid2021`.`alerta` TO 'investigador';";
-            String privilegiosSelectMedicaoInvestigador = "GRANT SELECT ON `sid2021`.`medicao` TO 'investigador';";
             statementLocalhost.executeUpdate(dropRoleInvestigador);
             statementLocalhost.executeUpdate(createInvestigador);
             statementLocalhost.executeUpdate(privilegiosProcedureInvestigador);
             statementLocalhost.executeUpdate(privilegiosUserProcedureInvestigador);
-            statementLocalhost.executeUpdate(privilegiosSelectCulturaInvestigador);
-            statementLocalhost.executeUpdate(privilegiosSelectUtilizadorInvestigador);
-            statementLocalhost.executeUpdate(privilegiosSelectAlertaInvestigador);
-            statementLocalhost.executeUpdate(privilegiosSelectMedicaoInvestigador);
 
             //Criar ROLE administrador
             String dropRoleAdmin = "DROP ROLE IF EXISTS `administrador`;";
