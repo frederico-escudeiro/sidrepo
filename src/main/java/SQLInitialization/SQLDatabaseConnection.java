@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongo;
+package SQLInitialization;
 
 import java.sql.*;
 

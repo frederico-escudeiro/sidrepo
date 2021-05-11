@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongoDirect;
+package Direto;
 
 import java.io.FileInputStream;
 import java.sql.Connection;
@@ -22,7 +22,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 
-import bonsmalandros.projetoSIDMongo.ValidaMedicoes;
+import MQTT.ValidaMedicoes;
 
 public class MongoToSQL extends Thread {
 	//MONGO

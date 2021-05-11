@@ -1,4 +1,4 @@
-package bonsmalandros.projetoSIDMongo;
+package MQTT;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
