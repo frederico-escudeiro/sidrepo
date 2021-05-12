@@ -27,7 +27,6 @@ public class LancaThreadsPC1 {
 			System.out.println(collection);
 			MongoToCloud m2c = new MongoToCloud(collection);
 			listThreads.add(m2c);
-			// m2c.start();
 		}
 	}
 

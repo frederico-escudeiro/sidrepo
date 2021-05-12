@@ -1,14 +1,11 @@
 
 package MQTT;
 
-import java.io.FileInputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Properties;
 import java.util.Random;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -17,13 +14,10 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import com.mongodb.internal.connection.Time;
-
 public class CloudToSQL extends Thread implements MqttCallback {
 	private MqttClient mqttclient;
 	private String cloud_server;
 	private String cloud_topic;
-	private String serverSQL; // URI SQL
 	private char tipoDoSensor;
 	private int idZona;
 	private int idSensor;
@@ -33,7 +27,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private static Statement statementLocalhost;
 	private static Connection connectionCloud;
 	private static Statement statementCloud;
-	private CheckerThread threadChecker;
+	private CheckSensorReadingTimeoutThread threadChecker;
 	private ValidaMedicoes valida;
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
@@ -50,8 +44,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			System.out.println(cloud_topic);
 			connectToSQL(SQL_uri, SQL_User, SQL_Pass, true);
 			connectToSQL(SQL_prof_uri, SQL_profUser, SQL_profPass, false);
-			new CheckerThread(timerCheckCloudProf, true).start();
-			threadChecker = new CheckerThread(timerCheckIfGetsMessages, false);
+			new CheckProfessorCloudSensorThread(timerCheckCloudProf).start();
+			threadChecker = new CheckSensorReadingTimeoutThread(timerCheckIfGetsMessages);
 			valida = new ValidaMedicoes();
 			threadChecker.start();
 		} catch (ClassNotFoundException | SQLException e) {
@@ -138,18 +132,16 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	//metodo da interface
 	public void deliveryComplete(IMqttDeliveryToken var1) {
 	}
-	//CheckProfessorCloudSensorThread 	CheckSensorReadingTimeoutThread
-	private class CheckerThread extends Thread {
+	
+	
+	private class CheckProfessorCloudSensorThread extends Thread {
 		private int checkTime;
-		private boolean isCheckSQL;
 
-		public CheckerThread(int timeCheck, boolean isCheckSQL) {
+		public CheckProfessorCloudSensorThread(int timeCheck) {
 			this.checkTime = timeCheck;
-			this.isCheckSQL = isCheckSQL;
 		}
 
 		public void run() {
-			if (isCheckSQL) {
 				try {
 
 					String sqlQuery = "SELECT * FROM `sensor` WHERE tipo = '" + String.valueOf(tipoDoSensor)
@@ -179,28 +171,39 @@ public class CloudToSQL extends Thread implements MqttCallback {
 						}
 					}
 				} catch (InterruptedException e) {
+					//Depois para tirar o sysout.
 					System.out.println("Algo me interrompeu enquanto dormia");
 				}
-			} else {
-				while (true)
-					try {
-						sleep(checkTime);
-						valida.clear();
-						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
-								+ checkTime / 1000 + " segundos.')";
-						try {
-							statementLocalhost.executeUpdate(sqlQuery);
-
-						} catch (SQLException e) {
-							System.out.println("erro na querySQL");
-						}
-
-					} catch (InterruptedException e) {
-						System.out.println("Recebeu Mensagem");
-					}
-			}
+			
 
 		}
+	}
+	private class CheckSensorReadingTimeoutThread extends Thread{
+		private int checkTime;
+		
+		public CheckSensorReadingTimeoutThread(int timeCheck) {
+			this.checkTime = timeCheck;
+		}
+		
+		public void run() {
+			while (true)
+				try {
+					sleep(checkTime);
+					valida.clear();
+					String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
+							+ checkTime / 1000 + " segundos.')";
+					try {
+						statementLocalhost.executeUpdate(sqlQuery);
+
+					} catch (SQLException e) {
+						System.out.println("erro na querySQL");
+					}
+
+				} catch (InterruptedException e) {
+					System.out.println("Recebeu Mensagem");
+				}
+		}
+		
 	}
 
 	public static void main(String[] args) {
