@@ -6,6 +6,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -29,6 +33,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private static Statement statementCloud;
 	private CheckSensorReadingTimeoutThread threadChecker;
 	private ValidaMedicoes valida;
+	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
 			String cloud_server, String cloud_topic, String SQL_prof_uri, String SQL_profUser, String SQL_profPass,
@@ -41,7 +46,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			this.limiteInferior = limiteInferior;
 			this.limiteSuperior = limiteSuperior;
 			this.cloud_topic = cloud_topic + "_" + tipoSensor + idZona;
-			System.out.println(cloud_topic);
+			System.out.println(this.cloud_topic);
 			connectToSQL(SQL_uri, SQL_User, SQL_Pass, true);
 			connectToSQL(SQL_prof_uri, SQL_profUser, SQL_profPass, false);
 			new CheckProfessorCloudSensorThread(timerCheckCloudProf).start();
@@ -86,33 +91,42 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	}
 
 	void dealWithData(String message) {
+		//{Zona: "Z2", Sensor: "H2", Data: "2021-05-13T14:36:30Z", Medicao: "19.00000000000002" }
+		
+		String[] data_medicao = message.split("\"");
+		
+		System.out.println(data_medicao[5]+data_medicao[7]);
+		//2021-05-13T14:46:45Z12.099999999999998
+		
 		// System.out.println(message);
 		// String[] data_medicao = message.split("(\\{\"Tempo\": \\{\"\\$date\":
 		// \")|(\"\\}, \"Medicao\": )|(\\})");
 
 		// TEREMOS QUE MUDAR ISTO PARA ADAPTAR PARA O NOSSO PROBLEMA
-		String data_medicao_1 = message.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
+		/*String data_medicao_1 = message.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
 		String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
 		String data_medicao_3 = data_medicao_2.replace("\" }", "");
 		String[] data_medicao = data_medicao_3.split(" ");
-
+*/
 		// System.out.println("Deal with Data: " + data_medicao[0] + " " +
 		// data_medicao[1]);
-		String data1 = data_medicao[0].replace("T", " ");
+		String data1 = data_medicao[5].replace("T", " ");
 		String data1_final = data1.replace("Z", "");
 		char validacao;
 
-		if (Double.parseDouble(data_medicao[1]) < limiteSuperior
-				&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));// i ou v 
+		if (Double.parseDouble(data_medicao[7]) < limiteSuperior
+				&& Double.parseDouble(data_medicao[7]) > limiteInferior) {
+			validacao = valida.getValidacao(Double.parseDouble(data_medicao[7]));// i ou v 
 			;
 		} else {
 			validacao = 's';
 		}
 		System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
-				+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
-		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[1]
+				+ ", Valor : " + Double.parseDouble(data_medicao[7]) + " ,Validacao : " + validacao);
+		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[7]
 				+ "','" + validacao + "');";
+				
+				
 		try {
 			statementLocalhost.executeUpdate(procedMedicaoInsert);
 		} catch (SQLException e) {
@@ -190,14 +204,19 @@ public class CloudToSQL extends Thread implements MqttCallback {
 				try {
 					sleep(checkTime);
 					valida.clear();
-					String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
-							+ checkTime / 1000 + " segundos.')";
-					try {
-						statementLocalhost.executeUpdate(sqlQuery);
+					String sqlQuery="";
+					
+						sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor "+ tipoDoSensor + idZona+" sem registar medições', 'Não são recebidas medições há "
+								+ checkTime / 1000 + " segundos. Data: "+ new Date().toString() + "')";
+					
+						try {
+							statementLocalhost.executeUpdate(sqlQuery);
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 
-					} catch (SQLException e) {
-						System.out.println("erro na querySQL");
-					}
+				
 
 				} catch (InterruptedException e) {
 					System.out.println("Recebeu Mensagem");
