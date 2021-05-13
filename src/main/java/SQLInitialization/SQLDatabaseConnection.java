@@ -263,7 +263,7 @@ public class SQLDatabaseConnection {
             
             //criar procedimento que lista alertas do tecnico
             String dropProcedimentoListarAlertasTecnico = "DROP PROCEDURE IF EXISTS `listar_alertas_tecnico`";
-            String createUtilizadorProcedureListarAlertasTecnico = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas_tecnico`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN (SELECT DISTINCT alerta.tipoAlerta, alerta.mensagem, null as tempo, null as valorMedicao FROM alerta, medicao WHERE alerta.idCultura is null and (alerta.idMedicao is null)) UNION (SELECT DISTINCT alerta.tipoAlerta, alerta.mensagem, medicao.tempo, medicao.valorMedicao FROM alerta, medicao WHERE alerta.idCultura is null and alerta.idMedicao=medicao.idMedicao); END";
+            String createUtilizadorProcedureListarAlertasTecnico = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas_tecnico`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN (SELECT DISTINCT alerta.tipoAlerta, alerta.mensagem, null as tempo, null as valorMedicao, null as idMedicao FROM alerta, medicao WHERE alerta.idCultura is null and alerta.idMedicao is null) UNION (SELECT DISTINCT alerta.tipoAlerta, alerta.mensagem, medicao.tempo, medicao.valorMedicao, medicao.idMedicao FROM alerta, medicao WHERE alerta.idCultura is null and alerta.idMedicao=medicao.idMedicao); END";
             statementLocalhost.executeUpdate(dropProcedimentoListarAlertasTecnico);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarAlertasTecnico);
 
@@ -495,7 +495,7 @@ public class SQLDatabaseConnection {
 
             //criar trigger de alerta de medicao fora dos limites
             String dropTriggerAlertaSensor = "DROP TRIGGER IF EXISTS `alerta_sensor`";
-            String createTriggerAlertaSensor = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_sensor` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN IF new.validacao = 's' THEN CALL `criar_alerta`(NULL, new.idMedicao, 'Alerta Valor de Medição Fora dos Limites do Sensor', 'Foi registada uma medição com um valor que ultrapassa os limites de hardware do sensor.'); END IF; END";
+            String createTriggerAlertaSensor = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_sensor` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN SET @tipoSensor := (SELECT sensor.tipoSensor FROM medicao, sensor, zona WHERE new.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.idZona=zona.idZona); SET @zona := (SELECT zona.idZona FROM medicao, sensor, zona WHERE new.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.idZona=zona.idZona); SET @tipoAlerta := concat('Alerta Valor de Medição Fora dos Limites do Sensor ', @tipoSensor, @zona); IF new.validacao = 's' THEN CALL `criar_alerta`(NULL, new.idMedicao, @tipoAlerta, 'Foi registada uma medição com um valor que ultrapassa os limites de hardware do sensor.'); END IF; END";
             statementLocalhost.executeUpdate(dropTriggerAlertaSensor);
             statementLocalhost.executeUpdate(createTriggerAlertaSensor);
 
