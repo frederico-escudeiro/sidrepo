@@ -264,8 +264,8 @@ public class SQLDatabaseConnection {
             //criar procedimento que lista alertas do tecnico
             String dropProcedimentoListarAlertasTecnico = "DROP PROCEDURE IF EXISTS `listar_alertas_tecnico`";
             String createUtilizadorProcedureListarAlertasTecnico = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas_tecnico`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN (SELECT DISTINCT alerta.tipoAlerta, alerta.mensagem, null as tempo, null as valorMedicao FROM alerta, medicao WHERE alerta.idCultura is null and (alerta.idMedicao is null)) UNION (SELECT DISTINCT alerta.tipoAlerta, alerta.mensagem, medicao.tempo, medicao.valorMedicao FROM alerta, medicao WHERE alerta.idCultura is null and alerta.idMedicao=medicao.idMedicao); END";
-            statementLocalhost.executeUpdate(dropProcedimentoListarAlertas);
-            statementLocalhost.executeUpdate(createUtilizadorProcedureListarAlertas);
+            statementLocalhost.executeUpdate(dropProcedimentoListarAlertasTecnico);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureListarAlertasTecnico);
 
             //criar procedimento que lista culturas
             String dropProcedimentoListarCulturas = "DROP PROCEDURE IF EXISTS `listar_culturas`";
@@ -281,7 +281,7 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que lista medicoes
             String dropProcedimentoListarMedicoes = "DROP PROCEDURE IF EXISTS `listar_medicoes`";
-            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE medicao.tempo >= now() - interval 5 minute ORDER BY medicao.tempo ASC; END";
+            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, medicao.validacao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE medicao.tempo > tempo ORDER BY medicao.tempo ASC; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarMedicoes);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarMedicoes);
 
