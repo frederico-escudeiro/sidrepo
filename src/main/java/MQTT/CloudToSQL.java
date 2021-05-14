@@ -91,33 +91,16 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	}
 
 	void dealWithData(String message) {
-		//{Zona: "Z2", Sensor: "H2", Data: "2021-05-13T14:36:30Z", Medicao: "19.00000000000002" }
-		
-		String[] data_medicao = message.split("\"");
-		
-		System.out.println(data_medicao[5]+data_medicao[7]);
-		//2021-05-13T14:46:45Z12.099999999999998
-		
-		// System.out.println(message);
-		// String[] data_medicao = message.split("(\\{\"Tempo\": \\{\"\\$date\":
-		// \")|(\"\\}, \"Medicao\": )|(\\})");
-
-		// TEREMOS QUE MUDAR ISTO PARA ADAPTAR PARA O NOSSO PROBLEMA
-		/*String data_medicao_1 = message.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
-		String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
-		String data_medicao_3 = data_medicao_2.replace("\" }", "");
-		String[] data_medicao = data_medicao_3.split(" ");
-*/
-		// System.out.println("Deal with Data: " + data_medicao[0] + " " +
-		// data_medicao[1]);
-		String data1 = data_medicao[5].replace("T", " ");
+		String[] data_medicao = message.split(" ");
+		System.out.println("Data :" + data_medicao[0] + ", Valor_Medicao" + data_medicao[1]);
+		String data1 = data_medicao[0].replace("T", " ");
 		String data1_final = data1.replace("Z", "");
 		char validacao;
 
-		if (Double.parseDouble(data_medicao[7]) < limiteSuperior
-				&& Double.parseDouble(data_medicao[7]) > limiteInferior) {
-			validacao = valida.getValidacao(Double.parseDouble(data_medicao[7]));// i ou v 
-			;
+		if (Double.parseDouble(data_medicao[1]) < limiteSuperior
+				&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
+			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));// i ou v 
+
 		} else {
 			validacao = 's';
 		}
@@ -136,7 +119,6 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	//metodo da interface
 	public void messageArrived(String var1, MqttMessage message) throws Exception {
 		threadChecker.interrupt();
-		// System.out.println(cloud_topic + ": Entrei " + message.toString());
 		dealWithData(message.toString());
 
 	}
