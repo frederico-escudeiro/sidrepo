@@ -105,8 +105,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			validacao = 's';
 		}
 		System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
-				+ ", Valor : " + Double.parseDouble(data_medicao[7]) + " ,Validacao : " + validacao);
-		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[7]
+				+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
+		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[1]
 				+ "','" + validacao + "');";
 				
 				
