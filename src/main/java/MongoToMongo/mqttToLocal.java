@@ -70,21 +70,19 @@ public class mqttToLocal extends Thread implements MqttCallback {
 	}
 
 	private void dealWithData(String message) {
-		String data_medicao_1 = message.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
-		String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
-		String data_medicao_3 = data_medicao_2.replace("\" }", "");
-		String[] data_medicao = data_medicao_3.split(" ");
+		String[] data_medicao_1 = message.split("\"");
+		
 		
 		//System.out.println("Data: "+ data_medicao[0]+", Medicao: "+ data_medicao[1]);
 		Document doc = new Document();
 		try {
 			
 		    
-		    Date gmtTime = df1.parse(data_medicao[0]);
+		    Date gmtTime = df1.parse(data_medicao_1[5]);
 		    //df1.setTimeZone(TimeZone.getTimeZone("UTC"));
 			doc.append("Tempo", gmtTime)
-				.append("Medicao", Double.parseDouble(data_medicao[1]));
-			System.out.println("Data: "+ df1.parse(data_medicao[0])+", Medicao: "+ Double.parseDouble(data_medicao[1]));
+				.append("Medicao", Double.parseDouble(data_medicao_1[7]));
+			System.out.println("Data: "+ df1.parse(data_medicao_1[5])+", Medicao: "+ Double.parseDouble(data_medicao_1[7]));
 		} catch (NumberFormatException | ParseException e) {
 			System.out.println("Erro na passagem de String para Date");
 			e.printStackTrace();

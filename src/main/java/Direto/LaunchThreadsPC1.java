@@ -90,6 +90,7 @@ public class LaunchThreadsPC1 {
 
 	public void execute() {
 		/* LIGAÇAO AO "culturas" DATABASE E BUSCA DAS COLLECTIONS */
+		System.out.println(mongo_uri);
 		MongoClient mongoClientLocal = new MongoClient(new MongoClientURI(mongo_uri));
 		MongoDatabase baseDados = mongoClientLocal.getDatabase(mongo_database);
 		MongoIterable<String> listCollections = baseDados.listCollectionNames();
@@ -142,7 +143,7 @@ public class LaunchThreadsPC1 {
 		} else if (mongo_authentication.equals("true")) {
 			address = address + "/?authSource=admin";
 		}
-		return address;
+		return address+"&readPreference=primary";
 	}
 
 	public static void main(String[] args) {

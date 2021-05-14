@@ -25,11 +25,11 @@ import com.mongodb.client.model.Filters;
 import MQTT.ValidaMedicoes;
 
 public class MongoToSQL extends Thread {
-	//MONGO
+	// MONGO
 	private String mongo_collection;
 	private String mongo_database;
 	private String mongo_uri;
-	//SQL
+	// SQL
 	private Connection connectionLocalhost;
 	private Statement statementLocalhost;
 	private Connection connectionCloud;
@@ -47,14 +47,12 @@ public class MongoToSQL extends Thread {
 	private double limiteSuperior;
 	private ValidaMedicoes valida;
 	private CheckerThread threadChecker;
-	
-	
 
 	/* TODO FALTA ADICIONAR OS PARAMETROS SQL */
-	public MongoToSQL(String mongo_database, String mongo_uri, String sql_uri, String user_sql,
-			String pass_sql,String sql_uri_cloud,String user_sql_cloud,String pass_sql_cloud,
-			int check_sql_cloud,int check_if_gets_message, int sensorID, String zonaID, 
-			String tipoSensor,double limiteInferior, double limiteSuperior) {
+	public MongoToSQL(String mongo_database, String mongo_uri, String sql_uri, String user_sql, String pass_sql,
+			String sql_uri_cloud, String user_sql_cloud, String pass_sql_cloud, int check_sql_cloud,
+			int check_if_gets_message, int sensorID, String zonaID, String tipoSensor, double limiteInferior,
+			double limiteSuperior) {
 		this.mongo_database = mongo_database;
 		this.mongo_uri = mongo_uri;
 		this.sensorID = sensorID;
@@ -62,9 +60,9 @@ public class MongoToSQL extends Thread {
 		this.tipoSensor = tipoSensor;
 		this.limiteInferior = limiteInferior;
 		this.limiteSuperior = limiteSuperior;
-		//Thread para ver sql prof
+		// Thread para ver sql prof
 		new CheckerThread(check_sql_cloud, true).start();
-		//Thread para checkar se recebe mensagens
+		// Thread para checkar se recebe mensagens
 		threadChecker = new CheckerThread(check_if_gets_message, false);
 		valida = new ValidaMedicoes();
 		try {
@@ -75,8 +73,6 @@ public class MongoToSQL extends Thread {
 			e.printStackTrace();
 		}
 	}
-
-
 
 	void connectToSQL(String SQLDataBaseURI, String user, String pwd, boolean isLocal)
 			throws SQLException, ClassNotFoundException {
@@ -91,7 +87,8 @@ public class MongoToSQL extends Thread {
 	}
 
 	public void run() {
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+		// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss
+		// z");
 		MongoClient client = new MongoClient(new MongoClientURI(mongo_uri));
 		MongoDatabase database = client.getDatabase(mongo_database);
 		System.out.println("Connection To Mongo Suceeded");
@@ -104,7 +101,7 @@ public class MongoToSQL extends Thread {
 		Bson filter = Filters.eq("Data", df1.format(currentDate));
 		collection.find(filter).into(listDocuments);
 		if (!listDocuments.isEmpty()) {
-			// TODO writeSensor(listDocuments);
+			dealWithDataToSQL(listDocuments);
 		}
 
 		while (true) {
@@ -136,39 +133,43 @@ public class MongoToSQL extends Thread {
 		}
 
 	}
-	
-	private void dealWithDataToSQL(List<Document> listDocuments) {
-		for(Document document: listDocuments) {
-			String jsonString = document.toJson();
-			//JSON Parser
-			String data_medicao_1 = jsonString.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
-			String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
-			String data_medicao_3 = data_medicao_2.replace("\" }", "");
-			String[] data_medicao = data_medicao_3.split(" ");
 
-			//System.out.println("Deal with Data: " + data_medicao[0] + " " + data_medicao[1]);
+	private void dealWithDataToSQL(List<Document> listDocuments) {
+		for (Document document : listDocuments) {
+			String docToString = dealWithDoc(document);
+			String[] data_medicao = docToString.split(" ");
 			String data1 = data_medicao[0].replace("T", " ");
 			String data1_final = data1.replace("Z", "");
-			
-			//Limites Sensor
+			// Limites Sensor
 			char validacao;
 			if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 					&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));;
+				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
+				;
 			} else {
 				validacao = 's';
 			}
-			System.out.println("Limite Superior : "+limiteSuperior + " , Limite Inferior : " + limiteInferior +", Valor : " + Double.parseDouble(data_medicao[1])+" ,Validacao : "+validacao);
-			String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','" + data_medicao[1]
-					+ "','" + validacao + "');";
+			System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
+					+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
+			String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','"
+					+ data_medicao[1] + "','" + validacao + "');";
 			try {
 				statementLocalhost.executeUpdate(procedMedicaoInsert);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 	}
+
+	private String dealWithDoc(Document doc) {
+
+		Date date = doc.getDate("Tempo");
+		String dateToString = df1.format(date);
+		System.out.println(dateToString + " " + doc.getDouble("Medicao"));
+		return dateToString + " " + doc.getDouble("Medicao");
+	}
+
 	private class CheckerThread extends Thread {
 		private int checkTime;
 		private boolean isCheckSQL;
@@ -216,14 +217,15 @@ public class MongoToSQL extends Thread {
 					try {
 						sleep(checkTime);
 						valida.clear();
-						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "+checkTime/1000+" segundos.')";
+						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
+								+ checkTime / 1000 + " segundos.')";
 						try {
 							statementLocalhost.executeUpdate(sqlQuery);
-							
+
 						} catch (SQLException e) {
 							System.out.println("erro na querySQL");
 						}
-						
+
 					} catch (InterruptedException e) {
 						System.out.println("Recebeu Mensagem");
 					}
