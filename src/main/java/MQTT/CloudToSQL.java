@@ -6,6 +6,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -29,6 +33,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private static Statement statementCloud;
 	private CheckSensorReadingTimeoutThread threadChecker;
 	private ValidaMedicoes valida;
+	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
 			String cloud_server, String cloud_topic, String SQL_prof_uri, String SQL_profUser, String SQL_profPass,
@@ -41,7 +46,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			this.limiteInferior = limiteInferior;
 			this.limiteSuperior = limiteSuperior;
 			this.cloud_topic = cloud_topic + "_" + tipoSensor + idZona;
-			System.out.println(cloud_topic);
+			System.out.println(this.cloud_topic);
 			connectToSQL(SQL_uri, SQL_User, SQL_Pass, true);
 			connectToSQL(SQL_prof_uri, SQL_profUser, SQL_profPass, false);
 			new CheckProfessorCloudSensorThread(timerCheckCloudProf).start();
@@ -95,13 +100,16 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 				&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
 			validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));// i ou v 
+
 		} else {
 			validacao = 's';
 		}
 		System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
-				+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
-		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[1]
+				+ ", Valor : " + Double.parseDouble(data_medicao[7]) + " ,Validacao : " + validacao);
+		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[7]
 				+ "','" + validacao + "');";
+				
+				
 		try {
 			statementLocalhost.executeUpdate(procedMedicaoInsert);
 		} catch (SQLException e) {
@@ -178,14 +186,19 @@ public class CloudToSQL extends Thread implements MqttCallback {
 				try {
 					sleep(checkTime);
 					valida.clear();
-					String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
-							+ checkTime / 1000 + " segundos.')";
-					try {
-						statementLocalhost.executeUpdate(sqlQuery);
+					String sqlQuery="";
+					
+						sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor "+ tipoDoSensor + idZona+" sem registar medições', 'Não são recebidas medições há "
+								+ checkTime / 1000 + " segundos. Data: "+ df1.format(new Date()) + "')";
+					
+						try {
+							statementLocalhost.executeUpdate(sqlQuery);
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 
-					} catch (SQLException e) {
-						System.out.println("erro na querySQL");
-					}
+				
 
 				} catch (InterruptedException e) {
 					System.out.println("Recebeu Mensagem");
