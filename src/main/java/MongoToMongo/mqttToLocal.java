@@ -79,8 +79,9 @@ public class mqttToLocal extends Thread implements MqttCallback {
 		Document doc = new Document();
 		try {
 			
-		    df1.setTimeZone(TimeZone.getTimeZone("UTC"));
+		    
 		    Date gmtTime = df1.parse(data_medicao[0]);
+		    //df1.setTimeZone(TimeZone.getTimeZone("UTC"));
 			doc.append("Tempo", gmtTime)
 				.append("Medicao", Double.parseDouble(data_medicao[1]));
 			System.out.println("Data: "+ df1.parse(data_medicao[0])+", Medicao: "+ Double.parseDouble(data_medicao[1]));
@@ -89,13 +90,6 @@ public class mqttToLocal extends Thread implements MqttCallback {
 			e.printStackTrace();
 		}
 		mongoColLocal.insertOne(doc);
-		
-		String format = "yyyy/MM/dd HH:mm:ss";
-	    SimpleDateFormat sdf = new SimpleDateFormat(format);
-
-	    // Convert Local Time to UTC (Works Fine)
-	    
-
 	}
 
 	@Override
