@@ -94,17 +94,17 @@ public class App
         
         
           mqttToLocal testeLocal = new mqttToLocal(uri_local, db_name_local, col_name_local_t1);
-        mqttToLocal testeLocal_1 = new mqttToLocal(uri_local, db_name_local, col_name_local_t2);
-        mqttToLocal testeLocal_2 = new mqttToLocal(uri_local, db_name_local, col_name_local_h1);
-        mqttToLocal testeLocal_3 = new mqttToLocal(uri_local, db_name_local, col_name_local_h2);
-        mqttToLocal testeLocal_4 = new mqttToLocal(uri_local, db_name_local, col_name_local_l1);
-        mqttToLocal testeLocal_5 = new mqttToLocal(uri_local, db_name_local, col_name_local_l2);
+//        mqttToLocal testeLocal_1 = new mqttToLocal(uri_local, db_name_local, col_name_local_t2);
+//        mqttToLocal testeLocal_2 = new mqttToLocal(uri_local, db_name_local, col_name_local_h1);
+//        mqttToLocal testeLocal_3 = new mqttToLocal(uri_local, db_name_local, col_name_local_h2);
+//        mqttToLocal testeLocal_4 = new mqttToLocal(uri_local, db_name_local, col_name_local_l1);
+//        mqttToLocal testeLocal_5 = new mqttToLocal(uri_local, db_name_local, col_name_local_l2);
         
        	  testeLocal.start();
-        testeLocal_1.start();
-        testeLocal_2.start();
-        testeLocal_3.start();
-        testeLocal_4.start();
-        testeLocal_5.start();
+//        testeLocal_1.start();
+//        testeLocal_2.start();
+//        testeLocal_3.start();
+//        testeLocal_4.start();
+//        testeLocal_5.start();
     }
 }
