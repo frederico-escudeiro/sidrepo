@@ -62,7 +62,7 @@ public class SQLDatabaseConnection {
     }
 
     private static void createTabelaAlerta() throws SQLException {
-        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(100) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL ) ENGINE = InnoDB;";
+        String createTable = "CREATE TABLE " + dbName.toLowerCase() + ".`alerta` ( `idAlerta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,  `idCultura` INT ,  `idMedicao` INT ,  `tipoAlerta` VARCHAR(100) NOT NULL ,  `mensagem` VARCHAR(200) NOT NULL,  `horaEscrita` TIMESTAMP NOT NULL ) ENGINE = InnoDB;";
         String addForeignKey = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-cultura` FOREIGN KEY (`idCultura`) REFERENCES `cultura`(`idCultura`) ON DELETE CASCADE ON UPDATE CASCADE;";
         String addForeignKey2 = "ALTER TABLE `alerta` ADD  CONSTRAINT `alerta-medicao` FOREIGN KEY (`idMedicao`) REFERENCES `medicao`(`idMedicao`) ON DELETE SET NULL ON UPDATE CASCADE;";
         statementLocalhost.executeUpdate(createTable);
@@ -130,7 +130,7 @@ public class SQLDatabaseConnection {
 
             //criar procedimento do alerta
             String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `criar_alerta`";
-            String createAlertaProcedure = "CREATE PROCEDURE `criar_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(100), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem); END;";
+            String createAlertaProcedure = "CREATE PROCEDURE `criar_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(100), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `horaEscrita`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem, current_timestamp()); END;";
             statementLocalhost.executeUpdate(dropProcedimentoAlerta);
             statementLocalhost.executeUpdate(createAlertaProcedure);
 
@@ -251,13 +251,13 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que atualiza a lista de alertas mostrada
             String dropProcedimentoAtualizarAlertas = "DROP PROCEDURE IF EXISTS `atualizar_alertas`";
-            String createUtilizadorProcedureAtualizarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND medicao.tempo > tempo; END";
+            String createUtilizadorProcedureAtualizarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND alerta.horaEscrita > tempo; END";
             statementLocalhost.executeUpdate(dropProcedimentoAtualizarAlertas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureAtualizarAlertas);
 
             //criar procedimento que lista alertas
             String dropProcedimentoListarAlertas = "DROP PROCEDURE IF EXISTS `listar_alertas`";
-            String createUtilizadorProcedureListarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta, alerta.mensagem, medicao.tempo, medicao.valorMedicao, cultura.idZona, cultura.nomeCultura, cultura.idCultura, sensor.tipoSensor, utilizador.idUtilizador FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND DATE(medicao.tempo) = date; END";
+            String createUtilizadorProcedureListarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta, alerta.mensagem, alerta.horaEscrita, medicao.valorMedicao, cultura.idZona, cultura.nomeCultura, cultura.idCultura, sensor.tipoSensor, utilizador.idUtilizador FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND DATE(alerta.horaEscrita) = date; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarAlertas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarAlertas);
             
@@ -279,7 +279,7 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(dropProcedimentoListarCulturasValidas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarCulturasValidas);
 
-          //criar procedimento que lista medicoes
+            //criar procedimento que lista medicoes
             String dropProcedimentoListarMedicoes = "DROP PROCEDURE IF EXISTS `listar_medicoes`";
             String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`(IN `tempo` INT, IN `zona` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, medicao.validacao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE zona.idZona = zona AND medicao.tempo >= now() - interval tempo minute ORDER BY medicao.tempo ASC; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarMedicoes);
