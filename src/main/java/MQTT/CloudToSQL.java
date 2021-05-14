@@ -86,18 +86,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	}
 
 	void dealWithData(String message) {
-		// System.out.println(message);
-		// String[] data_medicao = message.split("(\\{\"Tempo\": \\{\"\\$date\":
-		// \")|(\"\\}, \"Medicao\": )|(\\})");
-
-		// TEREMOS QUE MUDAR ISTO PARA ADAPTAR PARA O NOSSO PROBLEMA
-//		String data_medicao_1 = message.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
-//		String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
-//		String data_medicao_3 = data_medicao_2.replace("\" }", "");
 		String[] data_medicao = message.split(" ");
-
-		// System.out.println("Deal with Data: " + data_medicao[0] + " " +
-		// data_medicao[1]);
+		System.out.println("Data :" + data_medicao[0] + ", Valor_Medicao" + data_medicao[1]);
 		String data1 = data_medicao[0].replace("T", " ");
 		String data1_final = data1.replace("Z", "");
 		char validacao;
