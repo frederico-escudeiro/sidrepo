@@ -229,5 +229,16 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	public static void main(String[] args) {
 		MongoToCloud mongoToCloud = new MongoToCloud("sensort1");
 		mongoToCloud.start();
+		MongoToCloud mongoToCloud2 = new MongoToCloud("sensort2");
+		mongoToCloud2.start();
+		MongoToCloud mongoToCloud3 = new MongoToCloud("sensorh1");
+		mongoToCloud3.start();
+		MongoToCloud mongoToCloud4 = new MongoToCloud("sensorh2");
+		mongoToCloud4.start();
+		MongoToCloud mongoToCloud5 = new MongoToCloud("sensorl1");
+		mongoToCloud5.start();
+		MongoToCloud mongoToCloud6 = new MongoToCloud("sensorl2");
+		mongoToCloud6.start();
+		
 	}
 }

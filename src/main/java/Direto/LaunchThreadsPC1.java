@@ -90,6 +90,7 @@ public class LaunchThreadsPC1 {
 
 	public void execute() {
 		/* LIGAÇAO AO "culturas" DATABASE E BUSCA DAS COLLECTIONS */
+		System.out.println(mongo_uri);
 		MongoClient mongoClientLocal = new MongoClient(new MongoClientURI(mongo_uri));
 		MongoDatabase baseDados = mongoClientLocal.getDatabase(mongo_database);
 		MongoIterable<String> listCollections = baseDados.listCollectionNames();
@@ -104,9 +105,10 @@ public class LaunchThreadsPC1 {
 			
 			MongoToSQL thread;
 			try {
+				result.next();
 				System.out.println("IDSensor: "+sensorID+" ,Zona : " + result.getString(1) + " ,Sensor :" + result.getString(2)+" ,Limite inferior: "+result.getDouble(3)+" ,Limite Superior: "+result.getDouble(4));
 		
-				thread = new MongoToSQL(mongo_database, mongo_uri,sql_uri, user_sql,pass_sql,
+				thread = new MongoToSQL(mongo_database, mongo_uri,collection,sql_uri, user_sql,pass_sql,
 						sql_uri_cloud,user_sql_cloud,pass_sql_cloud,check_sql_cloud,
 						check_if_gets_message,sensorID,result.getString(1),result.getString(2),
 						result.getDouble(3),result.getDouble(4));
@@ -142,7 +144,7 @@ public class LaunchThreadsPC1 {
 		} else if (mongo_authentication.equals("true")) {
 			address = address + "/?authSource=admin";
 		}
-		return address;
+		return address+"&readPreference=primary";
 	}
 
 	public static void main(String[] args) {

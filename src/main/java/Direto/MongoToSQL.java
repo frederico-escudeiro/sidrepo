@@ -25,11 +25,11 @@ import com.mongodb.client.model.Filters;
 import MQTT.ValidaMedicoes;
 
 public class MongoToSQL extends Thread {
-	//MONGO
+	// MONGO
 	private String mongo_collection;
 	private String mongo_database;
 	private String mongo_uri;
-	//SQL
+	// SQL
 	private Connection connectionLocalhost;
 	private Statement statementLocalhost;
 	private Connection connectionCloud;
@@ -46,37 +46,39 @@ public class MongoToSQL extends Thread {
 	private double limiteInferior;
 	private double limiteSuperior;
 	private ValidaMedicoes valida;
-	private CheckerThread threadChecker;
-	
-	
+	private CheckSensorReadingTimeoutThread threadChecker;
 
 	/* TODO FALTA ADICIONAR OS PARAMETROS SQL */
-	public MongoToSQL(String mongo_database, String mongo_uri, String sql_uri, String user_sql,
-			String pass_sql,String sql_uri_cloud,String user_sql_cloud,String pass_sql_cloud,
-			int check_sql_cloud,int check_if_gets_message, int sensorID, String zonaID, 
-			String tipoSensor,double limiteInferior, double limiteSuperior) {
+	public MongoToSQL(String mongo_database, String mongo_uri, String mongo_collection, String sql_uri, String user_sql,
+			String pass_sql, String sql_uri_cloud, String user_sql_cloud, String pass_sql_cloud, int check_sql_cloud,
+			int check_if_gets_message, int sensorID, String zonaID, String tipoSensor, double limiteInferior,
+			double limiteSuperior) {
 		this.mongo_database = mongo_database;
 		this.mongo_uri = mongo_uri;
+		this.mongo_collection = mongo_collection;
 		this.sensorID = sensorID;
 		this.zonaID = zonaID;
 		this.tipoSensor = tipoSensor;
 		this.limiteInferior = limiteInferior;
 		this.limiteSuperior = limiteSuperior;
-		//Thread para ver sql prof
-		new CheckerThread(check_sql_cloud, true).start();
-		//Thread para checkar se recebe mensagens
-		threadChecker = new CheckerThread(check_if_gets_message, false);
+		// Thread para ver sql prof
+		
 		valida = new ValidaMedicoes();
 		try {
+			System.out.println("SQL_Cloud_Uri: " + sql_uri_cloud + " , user_cloud: " + user_sql_cloud + ", pass_cloud : "
+					+ pass_sql_cloud + ", SQL_Uri : " + sql_uri + " , user : " + user_sql
+					+ "pass" + pass_sql);
 			connectToSQL(sql_uri_cloud, user_sql_cloud, pass_sql_cloud, false);
 			connectToSQL(sql_uri, user_sql, pass_sql, true);
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		new CheckProfessorCloudSensorThread(check_sql_cloud).start();
+		// Thread para checkar se recebe mensagens
+		threadChecker = new CheckSensorReadingTimeoutThread(check_if_gets_message);
+		threadChecker.start();
 	}
-
-
 
 	void connectToSQL(String SQLDataBaseURI, String user, String pwd, boolean isLocal)
 			throws SQLException, ClassNotFoundException {
@@ -91,7 +93,8 @@ public class MongoToSQL extends Thread {
 	}
 
 	public void run() {
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+		// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss
+		// z");
 		MongoClient client = new MongoClient(new MongoClientURI(mongo_uri));
 		MongoDatabase database = client.getDatabase(mongo_database);
 		System.out.println("Connection To Mongo Suceeded");
@@ -101,10 +104,11 @@ public class MongoToSQL extends Thread {
 		time = time * 1000;
 		currentDate = new Date(time);
 
-		Bson filter = Filters.eq("Data", df1.format(currentDate));
+		Bson filter = Filters.eq("Tempo", currentDate);
 		collection.find(filter).into(listDocuments);
 		if (!listDocuments.isEmpty()) {
-			// TODO writeSensor(listDocuments);
+			threadChecker.interrupt();
+			dealWithDataToSQL(listDocuments);
 		}
 
 		while (true) {
@@ -114,14 +118,15 @@ public class MongoToSQL extends Thread {
 			time = time * 1000;
 			currentDate = new Date(time);
 			// late -> current
-			Bson filterLow = Filters.gt("Data", df1.format(lateDate));
-			Bson filterUp = Filters.lte("Data", df1.format(currentDate));// para evitar o envio de duplicados
+			Bson filterLow = Filters.gt("Tempo", lateDate);
+			Bson filterUp = Filters.lte("Tempo", currentDate);// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 			collection.find(filterLowAndUp).into(listDocuments);
 			if (!listDocuments.isEmpty()) {
+				threadChecker.interrupt();
 				dealWithDataToSQL(listDocuments);
 			}
-			System.out.println(/* cloud_topic + */ ": Intervalo: " + lateDate + " -> " + currentDate);
+			System.out.println("Sensor " + zonaID + tipoSensor + ": Intervalo: " + lateDate + " -> " + currentDate);
 			try {
 				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 				time = time * 1000;
@@ -136,99 +141,113 @@ public class MongoToSQL extends Thread {
 		}
 
 	}
-	
-	private void dealWithDataToSQL(List<Document> listDocuments) {
-		for(Document document: listDocuments) {
-			String jsonString = document.toJson();
-			//JSON Parser
-			String data_medicao_1 = jsonString.replace("{Zona: \"Z1\", Sensor: \"T1\", Data: \"", "");
-			String data_medicao_2 = data_medicao_1.replace("\", Medicao: \"", " ");
-			String data_medicao_3 = data_medicao_2.replace("\" }", "");
-			String[] data_medicao = data_medicao_3.split(" ");
 
-			//System.out.println("Deal with Data: " + data_medicao[0] + " " + data_medicao[1]);
+	private void dealWithDataToSQL(List<Document> listDocuments) {
+		for (Document document : listDocuments) {
+			String docToString = dealWithDoc(document);
+			String[] data_medicao = docToString.split(" ");
 			String data1 = data_medicao[0].replace("T", " ");
 			String data1_final = data1.replace("Z", "");
-			
-			//Limites Sensor
+			// Limites Sensor
 			char validacao;
 			if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 					&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));;
+				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
+				;
 			} else {
 				validacao = 's';
 			}
-			System.out.println("Limite Superior : "+limiteSuperior + " , Limite Inferior : " + limiteInferior +", Valor : " + Double.parseDouble(data_medicao[1])+" ,Validacao : "+validacao);
-			String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','" + data_medicao[1]
-					+ "','" + validacao + "');";
+			System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
+					+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
+			String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','"
+					+ data_medicao[1] + "','" + validacao + "');";
 			try {
 				statementLocalhost.executeUpdate(procedMedicaoInsert);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
-		
-	}
-	private class CheckerThread extends Thread {
-		private int checkTime;
-		private boolean isCheckSQL;
 
-		public CheckerThread(int timeCheck, boolean isCheckSQL) {
+	}
+
+	private String dealWithDoc(Document doc) {
+
+		Date date = doc.getDate("Tempo");
+		String dateToString = df1.format(date);
+		System.out.println(dateToString + " " + doc.getDouble("Medicao"));
+		return dateToString + " " + doc.getDouble("Medicao");
+	}
+
+	private class CheckProfessorCloudSensorThread extends Thread {
+		private int checkTime;
+
+		public CheckProfessorCloudSensorThread(int timeCheck) {
 			this.checkTime = timeCheck;
-			this.isCheckSQL = isCheckSQL;
 		}
 
 		public void run() {
-			if (isCheckSQL) {
-				try {
+			try {
 
-					String sqlQuery = "SELECT * FROM `sensor` WHERE tipo = '" + String.valueOf(tipoSensor)
-							+ "' and idzona = " + zonaID;
-					while (true) {
-						try {
-							ResultSet result = statementCloud.executeQuery(sqlQuery);
-							while (result.next()) {
-								double limSup = result.getDouble(4);
-								double limInf = result.getDouble(3);
-								System.out.println(
-										String.valueOf(tipoSensor).toUpperCase() + sensorID + ": Limite Superior : "
-												+ result.getString(4) + " Limite Inferior : " + result.getString(3));
-								if (limSup != limiteSuperior) {
-									limiteSuperior = limSup;
-								}
-								if (limInf != limiteInferior) {
-									limiteInferior = limInf;
-								}
-								// TODO Store procedure para alterar a zona e o tipo caso mude
-							}
-							sleep(checkTime);
-
-						} catch (SQLException e) {
-							e.printStackTrace();
-							System.out.println("Erro na query na thread " + tipoSensor + " e zona " + zonaID);
-						}
-					}
-				} catch (InterruptedException e) {
-					System.out.println("Algo me interrompeu enquanto dormia");
-				}
-			} else {
-				while (true)
+				String sqlQuery = "SELECT * FROM `sensor` WHERE tipo = '" + String.valueOf(tipoSensor)
+						+ "' and idzona = " + zonaID;
+				System.out.println(sqlQuery);
+				while (true) {
 					try {
-						sleep(checkTime);
-						valida.clear();
-						String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "+checkTime/1000+" segundos.')";
-						try {
-							statementLocalhost.executeUpdate(sqlQuery);
-							
-						} catch (SQLException e) {
-							System.out.println("erro na querySQL");
+						ResultSet result = statementCloud.executeQuery(sqlQuery);
+						while (result.next()) {
+							double limSup = result.getDouble(4);
+							double limInf = result.getDouble(3);
+							System.out.println(
+									String.valueOf(tipoSensor).toUpperCase() + sensorID + ": Limite Superior : "
+											+ result.getString(4) + " Limite Inferior : " + result.getString(3));
+							if (limSup != limiteSuperior) {
+								limiteSuperior = limSup;
+							}
+							if (limInf != limiteInferior) {
+								limiteInferior = limInf;
+							}
+							// TODO Store procedure para alterar a zona e o tipo caso mude
 						}
-						
-					} catch (InterruptedException e) {
-						System.out.println("Recebeu Mensagem");
+						sleep(checkTime);
+
+					} catch (SQLException e) {
+						e.printStackTrace();
+						System.out.println("Erro na query na thread " + tipoSensor + " e zona " + zonaID);
 					}
+				}
+			} catch (InterruptedException e) {
+				// Depois para tirar o sysout.
+				System.out.println("Algo me interrompeu enquanto dormia");
 			}
 
 		}
+	}
+
+	private class CheckSensorReadingTimeoutThread extends Thread {
+		private int checkTime;
+
+		public CheckSensorReadingTimeoutThread(int timeCheck) {
+			this.checkTime = timeCheck;
+		}
+
+		public void run() {
+			while (true)
+				try {
+					sleep(checkTime);
+					valida.clear();
+					String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
+							+ checkTime / 1000 + " segundos.')";
+					try {
+						statementLocalhost.executeUpdate(sqlQuery);
+
+					} catch (SQLException e) {
+						System.out.println("erro na querySQL");
+					}
+
+				} catch (InterruptedException e) {
+					System.out.println("Recebeu Mensagem");
+				}
+		}
+
 	}
 }
