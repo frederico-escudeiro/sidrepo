@@ -281,7 +281,7 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que lista medicoes
             String dropProcedimentoListarMedicoes = "DROP PROCEDURE IF EXISTS `listar_medicoes`";
-            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`(IN `tempo` INT, IN `zona` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, medicao.validacao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE zona.idZona = zona AND medicao.tempo >= now() - interval tempo minute ORDER BY medicao.tempo ASC; END";
+            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`(IN `tempo` INT, IN `zona` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, medicao.idMedicao, medicao.validacao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE zona.idZona = zona AND medicao.tempo >= now() - interval tempo minute ORDER BY medicao.tempo ASC; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarMedicoes);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarMedicoes);
 
