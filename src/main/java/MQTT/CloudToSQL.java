@@ -33,7 +33,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private static Statement statementCloud;
 	private CheckSensorReadingTimeoutThread threadChecker;
 	private ValidaMedicoes valida;
-	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
 			String cloud_server, String cloud_topic, String SQL_prof_uri, String SQL_profUser, String SQL_profPass,
@@ -207,7 +207,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 					String sqlQuery="";
 					
 						sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor "+ tipoDoSensor + idZona+" sem registar medições', 'Não são recebidas medições há "
-								+ checkTime / 1000 + " segundos. Data: "+ new Date().toString() + "')";
+								+ checkTime / 1000 + " segundos. Data: "+ df1.format(new Date()) + "')";
 					
 						try {
 							statementLocalhost.executeUpdate(sqlQuery);
