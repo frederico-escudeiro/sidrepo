@@ -50,31 +50,26 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	// Tempo Datas
 	// "%Y-%m-%d'T'%H:%M:%S'Z'"
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	// private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS ZZ");
 	private Date currentDate = new Date();
 	private Date lateDate = new Date();
 	private long timeDifMilliSeconds = 6000; // delay na inserção e leitura de dados (1 segundo)
 
-	public MongoToCloud(String collection) {
-		try {
-
-			Properties properties = new Properties();
-			properties.load(new FileInputStream("MongoToCloud.ini"));
-			cloud_server = properties.getProperty("cloud_server");
-			cloud_topic = properties.getProperty("cloud_topic") + "_" + collection.substring(6).toUpperCase();
-			System.out.println(cloud_topic);
-			client_name = properties.getProperty("client_name");
-			mongo_address = properties.getProperty("mongo_address");
-			mongo_database = properties.getProperty("mongo_database");
-			mongo_collection = collection;
-			mongo_user = properties.getProperty("mongo_user");
-			mongo_password = properties.getProperty("mongo_password");
-			mongo_authentication = properties.getProperty("mongo_authentication");
-			mongo_replica = properties.getProperty("mongo_replica");
+	public MongoToCloud(String collection, String cloud_server, String cloud_topic, String client_name,
+			String mongo_address, String mongo_database, String mongo_user, String mongo_password,
+			String mongo_authentication, String mongo_replica) {
+		
+			this.cloud_server = cloud_server;
+			this.cloud_topic = cloud_topic + "_" + collection.substring(6).toUpperCase();
+			System.out.println(this.cloud_topic);
+			this.client_name = client_name;
+			this.mongo_address = mongo_address;
+			this.mongo_database = mongo_database;
+			this.mongo_collection = collection;
+			this.mongo_user = mongo_user;
+			this.mongo_password = mongo_password;
+			this.mongo_authentication = mongo_authentication;
+			this.mongo_replica = mongo_replica;
 			connectToBroker();
-		} catch (Exception properties) {
-			System.out.println("Error reading MongoToCloud.ini file " + properties);
-		}
 
 	}
 
@@ -130,7 +125,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 		MongoClient client = new MongoClient(new MongoClientURI(getMongoAdress()));
 		MongoDatabase database = client.getDatabase(mongo_database);
 		System.out.println("Connection To Mongo Suceeded");
-		MongoCollection collection = database.getCollection(mongo_collection);
+		MongoCollection<Document> collection = database.getCollection(mongo_collection);
 		List<Document> listDocuments = new ArrayList<>();
 		// TODO perguntar o porque de dividir e depois multiplicar pelo mesmo numero
 		long time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
@@ -226,19 +221,5 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 	}
 
-	public static void main(String[] args) {
-		MongoToCloud mongoToCloud = new MongoToCloud("sensort1");
-		mongoToCloud.start();
-		MongoToCloud mongoToCloud2 = new MongoToCloud("sensort2");
-		mongoToCloud2.start();
-		MongoToCloud mongoToCloud3 = new MongoToCloud("sensorh1");
-		mongoToCloud3.start();
-		MongoToCloud mongoToCloud4 = new MongoToCloud("sensorh2");
-		mongoToCloud4.start();
-		MongoToCloud mongoToCloud5 = new MongoToCloud("sensorl1");
-		mongoToCloud5.start();
-		MongoToCloud mongoToCloud6 = new MongoToCloud("sensorl2");
-		mongoToCloud6.start();
-		
-	}
+	
 }
