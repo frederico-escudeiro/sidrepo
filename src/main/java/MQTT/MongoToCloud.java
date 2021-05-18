@@ -52,7 +52,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private Date currentDate = new Date();
 	private Date lateDate = new Date();
-	private long timeDifMilliSeconds = 6000; // delay na inserção e leitura de dados (1 segundo)
+	private long timeDifMilliSeconds = 1000; // delay na inserção e leitura de dados (1 segundo)
 
 	public MongoToCloud(String collection, String cloud_server, String cloud_topic, String client_name,
 			String mongo_address, String mongo_database, String mongo_user, String mongo_password,
