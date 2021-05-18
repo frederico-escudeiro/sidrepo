@@ -271,7 +271,7 @@ public class SQLDatabaseConnection {
             		+ "INSERT INTO alertas_tecnico ((SELECT DISTINCT alerta.idAlerta, alerta.tipoAlerta, alerta.mensagem,  alerta.horaEscrita,null as idZona, null as valorMedicao, null as idMedicao,null as tipoSensor FROM alerta, medicao WHERE alerta.idCultura is null and alerta.idMedicao is null and DATE(alerta.horaEscrita) = date) UNION (SELECT DISTINCT alerta.idAlerta, alerta.tipoAlerta, alerta.mensagem, alerta.horaEscrita,sensor.idZona, medicao.valorMedicao, medicao.idMedicao,sensor.tipoSensor FROM alerta, medicao,sensor WHERE alerta.idCultura is null and alerta.idMedicao=medicao.idMedicao and DATE(alerta.horaEscrita) = date and medicao.idSensor= sensor.idSensor)); \r\n"
             		+ "\r\n"
             		+ "SET @iter := 0;\r\n"
-            		+ "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador WHERE email='emanimal');\r\n"
+            		+ "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador WHERE email=(select substring_index(user(),'@localhost', 1)));\r\n"
             		+ "WHILE (@iter < (SELECT COUNT(*) FROM alertas_tecnico)) DO\r\n"
             		+ "set @i=0;\r\n"
             		+ "SET @id = (select idAlerta from alertas_tecnico where (@i:=@i+1) between @iter and @iter);\r\n"
