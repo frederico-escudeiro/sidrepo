@@ -26,7 +26,6 @@ public class LancaThreadsPC1 {
 
 	public void startThreads(Iterable<String> listCollections) {
 		try {
-
 			Properties properties = new Properties();
 			properties.load(new FileInputStream("MongoToCloud.ini"));
 			String cloud_server = properties.getProperty("cloud_server");
