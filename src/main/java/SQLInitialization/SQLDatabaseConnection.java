@@ -254,6 +254,36 @@ public class SQLDatabaseConnection {
             String createUtilizadorProcedureAtualizarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND alerta.horaEscrita > tempo; END";
             statementLocalhost.executeUpdate(dropProcedimentoAtualizarAlertas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureAtualizarAlertas);
+            
+            //criar procedimento que atualiza a lista de alertas mostrada
+            String dropProcedimentoAtualizarAlertasTecnico = "DROP PROCEDURE IF EXISTS `atualizar_alertas_tecnico`";
+            String createUtilizadorProcedureAtualizarAlertasTecnico = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas_tecnico`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN \r\n"
+            		+ "\r\n"
+            		+ "DROP TEMPORARY TABLE IF EXISTS alertas_tecnico;\r\n"
+            		+ "CREATE TEMPORARY TABLE alertas_tecnico (idAlerta INT, tipoAlerta VARCHAR(100), mensagem VARCHAR(200), horaEscrita TIMESTAMP, idZona INT, valorMedicao DOUBLE, idMedicao INT, tipoSensor CHAR(1));\r\n"
+            		+ "\r\n"
+            		+ "INSERT INTO alertas_tecnico ((SELECT DISTINCT alerta.idAlerta, alerta.tipoAlerta, alerta.mensagem,  alerta.horaEscrita,null as idZona, null as valorMedicao, null as idMedicao,null as tipoSensor FROM alerta, medicao WHERE alerta.idCultura is null and alerta.idMedicao is null and alerta.horaEscrita > tempo) UNION (SELECT DISTINCT alerta.idAlerta, alerta.tipoAlerta, alerta.mensagem, alerta.horaEscrita,sensor.idZona, medicao.valorMedicao, medicao.idMedicao,sensor.tipoSensor FROM alerta, medicao,sensor WHERE alerta.idCultura is null and alerta.idMedicao=medicao.idMedicao and alerta.horaEscrita > tempo and medicao.idSensor= sensor.idSensor)); \r\n"
+            		+ "\r\n"
+            		+ "SET @iter := 0;\r\n"
+            		+ "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador WHERE email=(select substring_index(user(),'@localhost', 1)));\r\n"
+            		+ "WHILE (@iter < (SELECT COUNT(*) FROM alertas_tecnico)) DO\r\n"
+            		+ "set @i=0;\r\n"
+            		+ "SET @id = (select idAlerta from alertas_tecnico where (@i:=@i+1) between @iter and @iter);\r\n"
+            		+ "\r\n"
+            		+ "SET @tipo_alerta := (SELECT alertas_tecnico.tipoAlerta FROM alertas_tecnico WHERE alertas_tecnico.idAlerta=@id);\r\n"
+            		+ "SET @horaEscrita_deste_alerta := (SELECT horaEscrita FROM alertas_tecnico WHERE alertas_tecnico.idAlerta=@id);\r\n"
+            		+ "SET @horaEscrita_ultimo_alerta_deste_tipo := (SELECT horaEscrita FROM alertas_tecnico WHERE alertas_tecnico.tipoAlerta=@tipo_alerta and alertas_tecnico.horaEscrita<@horaEscrita_deste_alerta ORDER BY horaEscrita DESC LIMIT 1);\r\n"
+            		+ "IF (TIME(@horaEscrita_deste_alerta) < ADDTIME( @interval, TIME(@horaEscrita_ultimo_alerta_deste_tipo))) THEN\r\n"
+            		+ "	DELETE FROM alertas_tecnico WHERE (alertas_tecnico.idAlerta = @id);\r\n"
+            		+ "ELSE\r\n"
+            		+ "SET @iter := (@iter + 1);\r\n"
+            		+ "END IF;\r\n"
+            		+ "END WHILE;\r\n"
+            		+ "\r\n"
+            		+ "SELECT * FROM alertas_tecnico;\r\n"
+            		+ "END";
+            statementLocalhost.executeUpdate(dropProcedimentoAtualizarAlertasTecnico);
+            statementLocalhost.executeUpdate(createUtilizadorProcedureAtualizarAlertasTecnico);
 
             //criar procedimento que lista alertas
             String dropProcedimentoListarAlertas = "DROP PROCEDURE IF EXISTS `listar_alertas`";
@@ -272,7 +302,7 @@ public class SQLDatabaseConnection {
             		+ "\r\n"
             		+ "SET @iter := 0;\r\n"
             		+ "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador WHERE email=(select substring_index(user(),'@localhost', 1)));\r\n"
-            		+ "WHILE (@iter < (SELECT COUNT(*) FROM alertas_tecnico)) DO\r\n"
+            		+ "WHILE (@iter <= (SELECT COUNT(*) FROM alertas_tecnico)) DO\r\n"
             		+ "set @i=0;\r\n"
             		+ "SET @id = (select idAlerta from alertas_tecnico where (@i:=@i+1) between @iter and @iter);\r\n"
             		+ "\r\n"
@@ -281,8 +311,10 @@ public class SQLDatabaseConnection {
             		+ "SET @horaEscrita_ultimo_alerta_deste_tipo := (SELECT horaEscrita FROM alertas_tecnico WHERE alertas_tecnico.tipoAlerta=@tipo_alerta and alertas_tecnico.horaEscrita<@horaEscrita_deste_alerta ORDER BY horaEscrita DESC LIMIT 1);\r\n"
             		+ "IF (TIME(@horaEscrita_deste_alerta) < ADDTIME( @interval, TIME(@horaEscrita_ultimo_alerta_deste_tipo))) THEN\r\n"
             		+ "	DELETE FROM alertas_tecnico WHERE (alertas_tecnico.idAlerta = @id);\r\n"
+            		+ "ELSE\r\n"
+            		+ "    SET @iter := (@iter + 1);\r\n"
             		+ "END IF;\r\n"
-            		+ "SET @iter := (@iter + 1);\r\n"
+            		+ "\r\n"
             		+ "END WHILE;\r\n"
             		+ "\r\n"
             		+ "SELECT * FROM alertas_tecnico;\r\n"
@@ -631,9 +663,11 @@ public class SQLDatabaseConnection {
             String dropRoleTecnico = "DROP ROLE IF EXISTS `tecnico`;";
             String createTecnico = "CREATE ROLE tecnico;";
             String privilegiosTecnico = "GRANT EXECUTE ON PROCEDURE sid2021.listar_alertas_tecnico TO 'tecnico'";
+            String privilegiosAtualizarAlertasTecnico = "GRANT EXECUTE ON PROCEDURE sid2021.atualizar_alertas_tecnico TO 'tecnico'";
             statementLocalhost.executeUpdate(dropRoleTecnico);
             statementLocalhost.executeUpdate(createTecnico);
             statementLocalhost.executeUpdate(privilegiosTecnico);
+            statementLocalhost.executeUpdate(privilegiosAtualizarAlertasTecnico);
 
             //Criar ROLE java
             String dropRoleJava = "DROP ROLE IF EXISTS `java`;";
