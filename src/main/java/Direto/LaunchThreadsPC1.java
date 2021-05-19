@@ -79,8 +79,6 @@ public class LaunchThreadsPC1 {
 			result = statementCloud.executeQuery(sqlGetSensor);
 			} catch (SQLException e) {
 			System.out.println("Erro com a ligação ao Professor SQL");
-		}catch (IOException e) {
-			System.out.println("Erro com o ficheiro CloudToSQL.ini");
 		}catch (Exception properties) {
 			System.out.println("Error reading DirectMongoToSQL.ini file " + properties);
 		}
@@ -100,20 +98,22 @@ public class LaunchThreadsPC1 {
 	}
 
 	private void startThreads(Iterable<String> listCollections, ResultSet result) {
-		int sensorID = 1; 
+		int[] sensorID = {1,4,2,5,3,6}; 
+		int count = 0 ; 
 		for (String collection : listCollections) {
 			
 			MongoToSQL thread;
 			try {
 				result.next();
+				System.out.println("Coleção : " + collection);
 				System.out.println("IDSensor: "+sensorID+" ,Zona : " + result.getString(1) + " ,Sensor :" + result.getString(2)+" ,Limite inferior: "+result.getDouble(3)+" ,Limite Superior: "+result.getDouble(4));
 		
 				thread = new MongoToSQL(mongo_database, mongo_uri,collection,sql_uri, user_sql,pass_sql,
 						sql_uri_cloud,user_sql_cloud,pass_sql_cloud,check_sql_cloud,
-						check_if_gets_message,sensorID,result.getString(1),result.getString(2),
+						check_if_gets_message,sensorID[count],result.getString(1),result.getString(2),
 						result.getDouble(3),result.getDouble(4));
 				
-				sensorID++;
+				count++;
 				threads.add(thread);
 				thread.start();
 			
