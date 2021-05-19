@@ -189,7 +189,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 					String sqlQuery="";
 					
 						sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor "+ tipoDoSensor + idZona+" sem registar medições', 'Não são recebidas medições há "
-								+ checkTime / 1000 + " segundos. Data: "+ df1.format(new Date()) + "')";
+								+ checkTime / 1000 + " segundos.')";
 					
 						try {
 							statementLocalhost.executeUpdate(sqlQuery);

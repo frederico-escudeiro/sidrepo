@@ -62,12 +62,12 @@ public class MongoToSQL extends Thread {
 		this.limiteInferior = limiteInferior;
 		this.limiteSuperior = limiteSuperior;
 		// Thread para ver sql prof
-		
+
 		valida = new ValidaMedicoes();
 		try {
-			System.out.println("SQL_Cloud_Uri: " + sql_uri_cloud + " , user_cloud: " + user_sql_cloud + ", pass_cloud : "
-					+ pass_sql_cloud + ", SQL_Uri : " + sql_uri + " , user : " + user_sql
-					+ "pass" + pass_sql);
+			System.out
+					.println("SQL_Cloud_Uri: " + sql_uri_cloud + " , user_cloud: " + user_sql_cloud + ", pass_cloud : "
+							+ pass_sql_cloud + ", SQL_Uri : " + sql_uri + " , user : " + user_sql + "pass" + pass_sql);
 			connectToSQL(sql_uri_cloud, user_sql_cloud, pass_sql_cloud, false);
 			connectToSQL(sql_uri, user_sql, pass_sql, true);
 		} catch (ClassNotFoundException | SQLException e) {
@@ -92,41 +92,105 @@ public class MongoToSQL extends Thread {
 		}
 	}
 
+//	public void run() {
+//		// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss
+//		// z");
+//		MongoClient client = new MongoClient(new MongoClientURI(mongo_uri));
+//		MongoDatabase database = client.getDatabase(mongo_database);
+//		System.out.println("Connection To Mongo Suceeded");
+//		MongoCollection collection = database.getCollection(mongo_collection);
+//		List<Document> listDocuments = new ArrayList<>();
+//		long time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
+//		time = time * 1000;
+//		currentDate = new Date(time);
+//
+//		Bson filter = Filters.eq("Tempo", currentDate);
+//		collection.find(filter).into(listDocuments);
+//		if (!listDocuments.isEmpty()) {
+//			threadChecker.interrupt();
+//			dealWithDataToSQL(listDocuments);
+//		}
+//
+//		while (true) {
+//
+//			lateDate = currentDate;
+//			time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
+//			time = time * 1000;
+//			currentDate = new Date(time);
+//			// late -> current
+//			Bson filterLow = Filters.gt("Tempo", lateDate);
+//			Bson filterUp = Filters.lte("Tempo", currentDate);// para evitar o envio de duplicados
+//			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
+//			collection.find(filterLowAndUp).into(listDocuments);
+//			if (!listDocuments.isEmpty()) {
+//				threadChecker.interrupt();
+//				dealWithDataToSQL(listDocuments);
+//			}
+//			System.out.println("Sensor " + zonaID + tipoSensor + ": Intervalo: " + lateDate + " -> " + currentDate);
+//			try {
+//				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
+//				time = time * 1000;
+//				if ((time - currentDate.getTime()) <= 500) {
+//					sleep(1000);
+//				}
+//
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//
+//		}
+//
+//	}
 	public void run() {
+		// df1.setTimeZone(TimeZone.getTimeZone("UTC"));
 		// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss
 		// z");
 		MongoClient client = new MongoClient(new MongoClientURI(mongo_uri));
 		MongoDatabase database = client.getDatabase(mongo_database);
 		System.out.println("Connection To Mongo Suceeded");
-		MongoCollection collection = database.getCollection(mongo_collection);
+		MongoCollection<Document> collection = database.getCollection(mongo_collection);
 		List<Document> listDocuments = new ArrayList<>();
+		// TODO perguntar o porque de dividir e depois multiplicar pelo mesmo numero
 		long time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 		time = time * 1000;
+		// long time = ((new Date()).getTime() - timeDifMilliSeconds);
 		currentDate = new Date(time);
 
 		Bson filter = Filters.eq("Tempo", currentDate);
 		collection.find(filter).into(listDocuments);
 		if (!listDocuments.isEmpty()) {
-			threadChecker.interrupt();
 			dealWithDataToSQL(listDocuments);
 		}
 
 		while (true) {
-
-			lateDate = currentDate;
+//{$and:[{"Tempo":{$gt:ISODate("2021-05-13T15:33:31.000+00:00")}},{"Tempo":{$lte:ISODate("2021-05-13T15:33:33.000+00:00")}}]}
+			long lateDate = currentDate.getTime();
 			time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 			time = time * 1000;
+			// time = ((new Date()).getTime() - timeDifMilliSeconds);
 			currentDate = new Date(time);
+			long currentTime = currentDate.getTime();
+//			long numero = 1620920013000L;
+//			System.out.println("Numero : "+ numero);
+			System.out.println("Late Date -> " + lateDate + " CurrentDate ->" + currentTime);
+
+//			Bson filterBson = and(Arrays.asList(gt("Tempo", 
+//			        new java.util.Date(1620920011000L)), lte("Tempo", 
+//			                new java.util.Date(1620920013000L))));
+//			Bson filterBson =  lte("Tempo", 
+//			                new java.util.Date(currentTime));
 			// late -> current
-			Bson filterLow = Filters.gt("Tempo", lateDate);
-			Bson filterUp = Filters.lte("Tempo", currentDate);// para evitar o envio de duplicados
+			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
+			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 			collection.find(filterLowAndUp).into(listDocuments);
+			// collection.find().into(listDocuments);
 			if (!listDocuments.isEmpty()) {
-				threadChecker.interrupt();
+				System.out.println("Found one");
 				dealWithDataToSQL(listDocuments);
 			}
-			System.out.println("Sensor " + zonaID + tipoSensor + ": Intervalo: " + lateDate + " -> " + currentDate);
+			// System.out.println(cloud_topic + ": Intervalo: " + lateDate + " -> " +
+			// currentDate);
 			try {
 				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 				time = time * 1000;
@@ -166,7 +230,9 @@ public class MongoToSQL extends Thread {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
+
 		}
+		listDocuments.clear();
 
 	}
 
@@ -197,9 +263,9 @@ public class MongoToSQL extends Thread {
 						while (result.next()) {
 							double limSup = result.getDouble(4);
 							double limInf = result.getDouble(3);
-							System.out.println(
-									String.valueOf(tipoSensor).toUpperCase() + sensorID + ": Limite Superior : "
-											+ result.getString(4) + " Limite Inferior : " + result.getString(3));
+//							System.out.println(
+//									String.valueOf(tipoSensor).toUpperCase() + sensorID + ": Limite Superior : "
+//											+ result.getString(4) + " Limite Inferior : " + result.getString(3));
 							if (limSup != limiteSuperior) {
 								limiteSuperior = limSup;
 							}
