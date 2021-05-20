@@ -41,7 +41,6 @@ public class ValidaMedicoes {
 			putMedicao(valorMedicao);
 			return 'v';
 		} else {
-			System.out.println("ValidaMedicoes : Limite Superior : "+(max+1)+" , Limite Inferior : "+(min-1) +", Valor : "+valorMedicao);
 			if (valorMedicao > (min-1) && valorMedicao < (max+1)) {
 				putMedicao(valorMedicao);
 				return 'v';

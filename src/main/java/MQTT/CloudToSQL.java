@@ -73,11 +73,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		}
 	}
 
-	/*
-	 * { "_id": { "$oid": "6036c771967bf6108c5b7ca9" }, "Zona": "Z1", "Sensor":
-	 * "H1", "Data": "2021-02-24 at 21:38:56 GMT", "Medicao": "24.61639494871795" }
-	 */
-
+	
 	void connectToSQL(String SQLDataBaseURI, String user, String pwd, boolean isLocal)
 			throws SQLException, ClassNotFoundException {
 		if (isLocal) {
@@ -104,21 +100,25 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		} else {
 			validacao = 's';
 		}
-		System.out.println("Limite Superior : " + limiteSuperior + " , Limite Inferior : " + limiteInferior
-				+ ", Valor : " + Double.parseDouble(data_medicao[1]) + " ,Validacao : " + validacao);
 		String procedMedicaoInsert = "CALL `criar_medicao`('" + idSensor + "','" + data1_final + "','" + data_medicao[1]
 				+ "','" + validacao + "');";
 				
-				
 		try {
 			statementLocalhost.executeUpdate(procedMedicaoInsert);
+			long timeDate = new Date().getTime();
+			Date dateTimeDate = new Date(timeDate);
+//			System.out.println(cloud_topic + ": Data em que foi inserida no SQL : "+dateTimeDate);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		
 	}
 	//metodo da interface
 	public void messageArrived(String var1, MqttMessage message) throws Exception {
 		threadChecker.interrupt();
+		long timeDate = new Date().getTime();
+		Date dateTimeDate = new Date(timeDate);
+//		System.out.println(cloud_topic+": Data em que foi recebida a mensagem do MQTT : "+dateTimeDate);
 		dealWithData(message.toString());
 
 	}
@@ -182,6 +182,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		}
 		
 		public void run() {
+			int counter=1;
 			while (true)
 				try {
 					sleep(checkTime);
@@ -189,10 +190,11 @@ public class CloudToSQL extends Thread implements MqttCallback {
 					String sqlQuery="";
 					
 						sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor "+ tipoDoSensor + idZona+" sem registar medições', 'Não são recebidas medições há "
-								+ checkTime / 1000 + " segundos.')";
+								+counter * checkTime / 1000 + " segundos.')";
 					
 						try {
 							statementLocalhost.executeUpdate(sqlQuery);
+							counter++;
 						} catch (SQLException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -201,6 +203,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 				
 
 				} catch (InterruptedException e) {
+					counter=1;
 					System.out.println("Recebeu Mensagem");
 				}
 		}
