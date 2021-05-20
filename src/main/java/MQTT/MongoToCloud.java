@@ -1,6 +1,5 @@
 package MQTT;
 
-import java.util.Arrays;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.gt;
 import static com.mongodb.client.model.Filters.lte;
@@ -57,19 +56,19 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	public MongoToCloud(String collection, String cloud_server, String cloud_topic, String client_name,
 			String mongo_address, String mongo_database, String mongo_user, String mongo_password,
 			String mongo_authentication, String mongo_replica) {
-		
-			this.cloud_server = cloud_server;
-			this.cloud_topic = cloud_topic + "_" + collection.substring(6).toUpperCase();
-			System.out.println(this.cloud_topic);
-			this.client_name = client_name;
-			this.mongo_address = mongo_address;
-			this.mongo_database = mongo_database;
-			this.mongo_collection = collection;
-			this.mongo_user = mongo_user;
-			this.mongo_password = mongo_password;
-			this.mongo_authentication = mongo_authentication;
-			this.mongo_replica = mongo_replica;
-			connectToBroker();
+
+		this.cloud_server = cloud_server;
+		this.cloud_topic = cloud_topic + "_" + collection.substring(6).toUpperCase();
+		System.out.println(this.cloud_topic);
+		this.client_name = client_name;
+		this.mongo_address = mongo_address;
+		this.mongo_database = mongo_database;
+		this.mongo_collection = collection;
+		this.mongo_user = mongo_user;
+		this.mongo_password = mongo_password;
+		this.mongo_authentication = mongo_authentication;
+		this.mongo_replica = mongo_replica;
+		connectToBroker();
 
 	}
 
@@ -119,9 +118,6 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	}
 
 	public void run() {
-		// df1.setTimeZone(TimeZone.getTimeZone("UTC"));
-		// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss
-		// z");
 		MongoClient client = new MongoClient(new MongoClientURI(getMongoAdress()));
 		MongoDatabase database = client.getDatabase(mongo_database);
 		System.out.println("Connection To Mongo Suceeded");
@@ -130,44 +126,47 @@ public class MongoToCloud extends Thread implements MqttCallback {
 		// TODO perguntar o porque de dividir e depois multiplicar pelo mesmo numero
 		long time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 		time = time * 1000;
-		// long time = ((new Date()).getTime() - timeDifMilliSeconds);
 		currentDate = new Date(time);
-
 		Bson filter = Filters.eq("Tempo", currentDate);
 		collection.find(filter).into(listDocuments);
+
 		if (!listDocuments.isEmpty()) {
 			writeSensor(listDocuments);
 		}
 
 		while (true) {
-//{$and:[{"Tempo":{$gt:ISODate("2021-05-13T15:33:31.000+00:00")}},{"Tempo":{$lte:ISODate("2021-05-13T15:33:33.000+00:00")}}]}
 			long lateDate = currentDate.getTime();
 			time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 			time = time * 1000;
-			// time = ((new Date()).getTime() - timeDifMilliSeconds);
 			currentDate = new Date(time);
 			long currentTime = currentDate.getTime();
-//			long numero = 1620920013000L;
-//			System.out.println("Numero : "+ numero);
-			System.out.println("Late Date -> " + lateDate + " CurrentDate ->" + currentTime);
 
-//			Bson filterBson = and(Arrays.asList(gt("Tempo", 
-//			        new java.util.Date(1620920011000L)), lte("Tempo", 
-//			                new java.util.Date(1620920013000L))));
-//			Bson filterBson =  lte("Tempo", 
-//			                new java.util.Date(currentTime));
-			// late -> current
+//			// APAGAR DAQUI
+//			long timeDate3 = new Date().getTime();
+//			Date dateTimeDate3 = new Date(timeDate3);
+//			System.out.println(cloud_topic
+//					+ ": Data em que foi iniciada a query de pesquisa na base de dados mongo local : " + dateTimeDate3);
+//			// APAGAR ATE AQUI
+//
+//			// APAGAR DAQUI
+//			System.out.println(cloud_topic + ": Intervalo de procura na base de dados mongo local : "
+//					+ df1.format(new Date(lateDate)) + " -> " + df1.format(new Date(currentTime)));
+//			// APAGAR ATE AQUI
+
 			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
 			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 			collection.find(filterLowAndUp).into(listDocuments);
-			// collection.find().into(listDocuments);
+
+//			// APAGAR DAQUI
+//			long timeDate4 = new Date().getTime();
+//			Date dateTimeDate4 = new Date(timeDate4);
+//			System.out.println(cloud_topic
+//					+ ": Data em que foi acabada a query de pesquisa na base de dados mongo local : " + dateTimeDate4);
+//			// APAGAR ATE AQUI
 			if (!listDocuments.isEmpty()) {
-				System.out.println("Found one");
 				writeSensor(listDocuments);
 			}
-			// System.out.println(cloud_topic + ": Intervalo: " + lateDate + " -> " +
-			// currentDate);
 			try {
 				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 				time = time * 1000;
@@ -190,8 +189,12 @@ public class MongoToCloud extends Thread implements MqttCallback {
 				MqttMessage message = new MqttMessage();
 				message.setQos(0);
 				message.setPayload(docToString.getBytes());
+				long timeDate = new Date().getTime();
+				Date dateTimeDate = new Date(timeDate);
+//				System.out.println(cloud_topic + ": Documento : " + docToString);
+//				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + dateTimeDate);
 				mqttclient.publish(cloud_topic, message);
-				System.out.println("Documento : " + docToString);
+
 			}
 			listDocuments.clear();
 
@@ -205,7 +208,6 @@ public class MongoToCloud extends Thread implements MqttCallback {
 
 		Date date = doc.getDate("Tempo");
 		String dateToString = df1.format(date);
-		System.out.println(dateToString + " " + doc.getDouble("Medicao"));
 		return dateToString + " " + doc.getDouble("Medicao");
 	}
 
@@ -221,5 +223,4 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 	}
 
-	
 }
