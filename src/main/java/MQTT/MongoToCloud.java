@@ -49,9 +49,10 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	// Tempo Datas
 	// "%Y-%m-%d'T'%H:%M:%S'Z'"
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	private Date currentDate = new Date();
 	private Date lateDate = new Date();
-	private long timeDifMilliSeconds = 1000; // delay na inserção e leitura de dados (1 segundo)
+	private long timeDifMilliSeconds = 3000; // delay na inserção e leitura de dados (1 segundo)
 
 	public MongoToCloud(String collection, String cloud_server, String cloud_topic, String client_name,
 			String mongo_address, String mongo_database, String mongo_user, String mongo_password,
@@ -141,29 +142,29 @@ public class MongoToCloud extends Thread implements MqttCallback {
 			currentDate = new Date(time);
 			long currentTime = currentDate.getTime();
 
-//			// APAGAR DAQUI
-//			long timeDate3 = new Date().getTime();
-//			Date dateTimeDate3 = new Date(timeDate3);
-//			System.out.println(cloud_topic
-//					+ ": Data em que foi iniciada a query de pesquisa na base de dados mongo local : " + dateTimeDate3);
-//			// APAGAR ATE AQUI
-//
-//			// APAGAR DAQUI
-//			System.out.println(cloud_topic + ": Intervalo de procura na base de dados mongo local : "
-//					+ df1.format(new Date(lateDate)) + " -> " + df1.format(new Date(currentTime)));
-//			// APAGAR ATE AQUI
+			// APAGAR DAQUI
+			long timeDate3 = new Date().getTime();
+			Date dateTimeDate3 = new Date(timeDate3);
+			System.out.println(cloud_topic
+					+ ": Data em que foi iniciada a query de pesquisa na base de dados mongo local : " + sdf.format(dateTimeDate3));
+			// APAGAR ATE AQUI
+
+			// APAGAR DAQUI
+			System.out.println(cloud_topic + ": Intervalo de procura na base de dados mongo local : "
+					+ sdf.format(new Date(lateDate)) + " -> " + sdf.format(new Date(currentTime)));
+			// APAGAR ATE AQUI
 
 			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
 			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 			collection.find(filterLowAndUp).into(listDocuments);
 
-//			// APAGAR DAQUI
-//			long timeDate4 = new Date().getTime();
-//			Date dateTimeDate4 = new Date(timeDate4);
-//			System.out.println(cloud_topic
-//					+ ": Data em que foi acabada a query de pesquisa na base de dados mongo local : " + dateTimeDate4);
-//			// APAGAR ATE AQUI
+			// APAGAR DAQUI
+			long timeDate4 = new Date().getTime();
+			Date dateTimeDate4 = new Date(timeDate4);
+			System.out.println(cloud_topic
+					+ ": Data em que foi acabada a query de pesquisa na base de dados mongo local : " + sdf.format(dateTimeDate4));
+			// APAGAR ATE AQUI
 			if (!listDocuments.isEmpty()) {
 				writeSensor(listDocuments);
 			}
@@ -191,8 +192,8 @@ public class MongoToCloud extends Thread implements MqttCallback {
 				message.setPayload(docToString.getBytes());
 				long timeDate = new Date().getTime();
 				Date dateTimeDate = new Date(timeDate);
-//				System.out.println(cloud_topic + ": Documento : " + docToString);
-//				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + dateTimeDate);
+				System.out.println(cloud_topic + ": Documento : " + docToString);
+				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + sdf.format(dateTimeDate));
 				mqttclient.publish(cloud_topic, message);
 
 			}
