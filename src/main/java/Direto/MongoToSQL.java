@@ -16,6 +16,7 @@ import java.util.Properties;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -39,7 +40,7 @@ public class MongoToSQL extends Thread {
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private Date currentDate = new Date();
 	private Date lateDate = new Date();
-	private long timeDifMilliSeconds = 1000; // delay na inserção e leitura de dados (1 segundo)
+	private long timeDifMilliSeconds = 3000; // delay na inserção e leitura de dados (1 segundo)
 	private String tipoSensor;
 	private String zonaID;
 	private int sensorID;
@@ -47,6 +48,7 @@ public class MongoToSQL extends Thread {
 	private double limiteSuperior;
 	private ValidaMedicoes valida;
 	private CheckSensorReadingTimeoutThread threadChecker;
+	private String medicaoAnteriorData = " ";
 
 	/* TODO FALTA ADICIONAR OS PARAMETROS SQL */
 	public MongoToSQL(String mongo_database, String mongo_uri, String mongo_collection, String sql_uri, String user_sql,
@@ -125,7 +127,7 @@ public class MongoToSQL extends Thread {
 			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
 			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
-			collection.find(filterLowAndUp).into(listDocuments);
+			collection.find(filterLowAndUp).sort(new BasicDBObject("Tempo", 1)).into(listDocuments);
 //			//APAGAR DAQUI
 //			long timeDate4 = new Date().getTime();
 //			Date dateTimeDate4 = new Date(timeDate4);
@@ -156,27 +158,39 @@ public class MongoToSQL extends Thread {
 			String data1 = data_medicao[0].replace("T", " ");
 			String data1_final = data1.replace("Z", "");
 			char validacao;
+			if (!data1_final.equals(medicaoAnteriorData)) {
 //			System.out.println(document);
-			if (Double.parseDouble(data_medicao[1]) < limiteSuperior
-					&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
-				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
-				;
-			} else {
-				validacao = 's';
-			}
-			String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','"
-					+ data_medicao[1] + "','" + validacao + "');";
-			try {
+				if (Double.parseDouble(data_medicao[1]) < limiteSuperior
+						&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
+					validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
+					;
+				} else {
+					validacao = 's';
+				}
+				String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','"
+						+ data_medicao[1] + "','" + validacao + "');";
+				try {
 //				//APAGAR DAQUI
 //				long timeDate4 = new Date().getTime();
 //				Date dateTimeDate4 = new Date(timeDate4);
 //				System.out.println("T1: Data em que foi inserida a medição no SQL : "+dateTimeDate4);
 //				//APAGAR ATE AQUI
-				statementLocalhost.executeUpdate(procedMedicaoInsert);
-			} catch (SQLException e) {
-				e.printStackTrace();
+					statementLocalhost.executeUpdate(procedMedicaoInsert);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}else {
+				String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor " + tipoSensor + zonaID
+						+ " registou medições duplicadas', 'O sensor registou medições duplicadas em " +medicaoAnteriorData 
+						+ "')";
+				try {
+					statementLocalhost.executeUpdate(sqlQuery);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-
+			medicaoAnteriorData = data1_final;
 		}
 		listDocuments.clear();
 
@@ -202,7 +216,7 @@ public class MongoToSQL extends Thread {
 
 				String sqlQuery = "SELECT * FROM `sensor` WHERE tipo = '" + String.valueOf(tipoSensor)
 						+ "' and idzona = " + zonaID;
-				//System.out.println(sqlQuery);
+				// System.out.println(sqlQuery);
 				while (true) {
 					try {
 						ResultSet result = statementCloud.executeQuery(sqlQuery);
@@ -224,7 +238,7 @@ public class MongoToSQL extends Thread {
 					}
 				}
 			} catch (InterruptedException e) {
-				//System.out.println("Algo me interrompeu enquanto dormia");
+				// System.out.println("Algo me interrompeu enquanto dormia");
 			}
 
 		}
@@ -253,7 +267,7 @@ public class MongoToSQL extends Thread {
 					}
 
 				} catch (InterruptedException e) {
-					counter=0;
+					counter = 0;
 					System.out.println("Recebeu Mensagem");
 				}
 		}

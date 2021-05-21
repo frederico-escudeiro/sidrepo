@@ -78,29 +78,29 @@ public class App
         //Ficheiros
         long thresholdOfDocsRemoved = Long.parseLong(var1.getProperty("thresholdOfDocsRemoved"));
         
-//        LeituraMedicoes t1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_t1,uri_local,db_name_local,col_name_local_t1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
+        LeituraMedicoes t1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_t1,uri_local,db_name_local,col_name_local_t1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
 ////        LeituraMedicoes t2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_t2,uri_local,db_name_local,col_name_local_t2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
-////        LeituraMedicoes l1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_l1,uri_local,db_name_local,col_name_local_l1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
+        LeituraMedicoes l1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_l1,uri_local,db_name_local,col_name_local_l1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
 ////        LeituraMedicoes l2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_l2,uri_local,db_name_local,col_name_local_l2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
-////        LeituraMedicoes h1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_h1,uri_local,db_name_local,col_name_local_h1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
+        LeituraMedicoes h1 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_h1,uri_local,db_name_local,col_name_local_h1,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
 ////        LeituraMedicoes h2 = new LeituraMedicoes(uriNuvem,db_name_nuvem,col_name_nuvem_h2,uri_local,db_name_local,col_name_local_h2,timeDifMilliSeconds,timeKeep,thresholdOfDocsRemoved);
 //////        
-//        t1.start();
+        t1.start();
 ////    	t2.start();
-////    	l1.start();
+     	l1.start();
 ////    	l2.start();
-////    	h1.start();
+     	h1.start();
 ////    	h2.start();
         
         
-          mqttToLocal testeLocal = new mqttToLocal(uri_local, db_name_local, col_name_local_t1);
+//          mqttToLocal testeLocal = new mqttToLocal(uri_local, db_name_local, col_name_local_t1);
 //        mqttToLocal testeLocal_1 = new mqttToLocal(uri_local, db_name_local, col_name_local_t2);
          // mqttToLocal testeLocal_2 = new mqttToLocal(uri_local, db_name_local, col_name_local_h1);
 //        mqttToLocal testeLocal_3 = new mqttToLocal(uri_local, db_name_local, col_name_local_h2);
 //          mqttToLocal testeLocal_4 = new mqttToLocal(uri_local, db_name_local, col_name_local_l1);
 //        mqttToLocal testeLocal_5 = new mqttToLocal(uri_local, db_name_local, col_name_local_l2);
         
-       	  testeLocal.start();
+//       	  testeLocal.start();
 //        testeLocal_1.start();
        	  //testeLocal_2.start();
 //        testeLocal_3.start();
