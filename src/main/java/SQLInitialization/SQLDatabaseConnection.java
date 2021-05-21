@@ -127,6 +127,20 @@ public class SQLDatabaseConnection {
             if (!hasTable("alerta")) {
                 createTabelaAlerta();
             }
+            
+          //Criar User Administrador da Base de Dados
+            String dropUserAdministradorBD = "DROP USER IF EXISTS adminBD@localhost;";
+            String createAdministradorBD = "CREATE USER adminBD@localhost IDENTIFIED BY 'adminBD';";
+            String privilegiosAdministradorBD = "GRANT ALL ON *.* TO 'adminBD'@'localhost' WITH GRANT OPTION";
+            String privilegiosAdministradorSID = "GRANT ALL ON sid2021.* TO 'adminBD'@'localhost'";
+            String privilegiosAdministradorBDTiggers = "GRANT TRIGGER ON sid2021.* TO 'adminBD'@'localhost' ";
+            String privilegiosAdministradorBDProcedures = "GRANT ALTER ROUTINE,CREATE ROUTINE, EXECUTE ON sid2021.* TO 'adminBD'@'localhost' ";
+            statementLocalhost.executeUpdate(dropUserAdministradorBD);
+            statementLocalhost.executeUpdate(createAdministradorBD);
+            statementLocalhost.executeUpdate(privilegiosAdministradorBD);
+            statementLocalhost.executeUpdate(privilegiosAdministradorSID);
+            statementLocalhost.executeUpdate(privilegiosAdministradorBDTiggers);
+            statementLocalhost.executeUpdate(privilegiosAdministradorBDProcedures);
 
             //criar procedimento do alerta
             String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `criar_alerta`";
@@ -691,16 +705,7 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(createUserJava);
             statementLocalhost.executeUpdate(grantDefaultRoleJava);
             statementLocalhost.executeUpdate(setDefaultRoleJava);
-
-            //Criar User Administrador da Base de Dados
-            String dropUserAdministradorBD = "DROP USER IF EXISTS adminBD@localhost;";
-            String createAdministradorBD = "CREATE USER adminBD@localhost IDENTIFIED BY 'adminBD';";
-            String privilegiosAdministradorBD = "GRANT ALL ON sid2021.* TO 'adminBD'@'localhost' ";
-            statementLocalhost.executeUpdate(dropUserAdministradorBD);
-            statementLocalhost.executeUpdate(createAdministradorBD);
-            statementLocalhost.executeUpdate(privilegiosAdministradorBD);
-            statementLocalhost.executeUpdate(privilegiosAdministradorBD);
-            
+                             
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
