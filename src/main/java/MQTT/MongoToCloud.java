@@ -4,6 +4,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.gt;
 import static com.mongodb.client.model.Filters.lte;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
@@ -157,7 +158,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
 			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
-			collection.find(filterLowAndUp).into(listDocuments);
+			collection.find(filterLowAndUp).sort(new BasicDBObject("Tempo", 1)).into(listDocuments);
 
 			// APAGAR DAQUI
 			long timeDate4 = new Date().getTime();
@@ -193,7 +194,9 @@ public class MongoToCloud extends Thread implements MqttCallback {
 				long timeDate = new Date().getTime();
 				Date dateTimeDate = new Date(timeDate);
 				System.out.println(cloud_topic + ": Documento : " + docToString);
-				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + sdf.format(dateTimeDate));
+
+//				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + dateTimeDate);
+
 				mqttclient.publish(cloud_topic, message);
 
 			}
