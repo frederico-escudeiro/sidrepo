@@ -127,6 +127,13 @@ public class SQLDatabaseConnection {
             if (!hasTable("alerta")) {
                 createTabelaAlerta();
             }
+            
+
+            //Criar User Administrador da Base de Dados
+            String dropUserAdministradorBD = "DROP USER IF EXISTS adminBD@localhost;";
+            String createAdministradorBD = "CREATE USER adminBD@localhost IDENTIFIED BY 'adminBD';";
+            statementLocalhost.executeUpdate(dropUserAdministradorBD);
+            statementLocalhost.executeUpdate(createAdministradorBD);
 
             //criar procedimento do alerta
             String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `criar_alerta`";
@@ -590,12 +597,6 @@ public class SQLDatabaseConnection {
                 statementLocalhost.executeUpdate(selectSqlLocalhost);
             }
 
-            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10', '1');";
-            statementLocalhost.executeUpdate(insertCultura);
-            String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES ('1', current_timestamp(), '2', 'v');";
-            statementLocalhost.executeUpdate(insertMedicao);
-            String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');";
-            statementLocalhost.executeUpdate(insertAlerta);
 
 
             //Criar ROLE investigador
@@ -691,16 +692,20 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(createUserJava);
             statementLocalhost.executeUpdate(grantDefaultRoleJava);
             statementLocalhost.executeUpdate(setDefaultRoleJava);
+            
+            ;
 
-            //Criar User Administrador da Base de Dados
-            String dropUserAdministradorBD = "DROP USER IF EXISTS adminBD@localhost;";
-            String createAdministradorBD = "CREATE USER adminBD@localhost IDENTIFIED BY 'adminBD';";
             String privilegiosAdministradorBD = "GRANT ALL ON sid2021.* TO 'adminBD'@'localhost' ";
-            statementLocalhost.executeUpdate(dropUserAdministradorBD);
-            statementLocalhost.executeUpdate(createAdministradorBD);
-            statementLocalhost.executeUpdate(privilegiosAdministradorBD);
             statementLocalhost.executeUpdate(privilegiosAdministradorBD);
             
+     
+
+            String insertCultura = "INSERT INTO `cultura` (`idCultura`, `nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (NULL, 'pêssegos', NULL, '1', '25', '5', '25', '5', '25', '5', '20', '10', '20', '10', '20', '10', '1');";
+            statementLocalhost.executeUpdate(insertCultura);
+            String insertMedicao = "INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES ('1', current_timestamp(), '2', 'v');";
+            statementLocalhost.executeUpdate(insertMedicao);
+            String insertAlerta = "INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`) VALUES ('1', '1', 'PERIGO', 'asd');";
+            statementLocalhost.executeUpdate(insertAlerta);
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
