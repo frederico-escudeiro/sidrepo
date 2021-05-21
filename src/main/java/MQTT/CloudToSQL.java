@@ -34,6 +34,8 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private CheckSensorReadingTimeoutThread threadChecker;
 	private ValidaMedicoes valida;
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+	private DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	private String medicaoAnteriorData = " ";
 
 	public CloudToSQL(int sensorID, String zonaID, String tipoSensor, double limiteInferior, double limiteSuperior,
@@ -95,6 +97,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 		if (!data1_final.equals(medicaoAnteriorData)) {
 
+
 			if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 					&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
 				validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));// i ou v
@@ -123,6 +126,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+
 		}
 		medicaoAnteriorData = data1_final;
 	}
@@ -132,7 +136,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 		threadChecker.interrupt();
 		long timeDate = new Date().getTime();
 		Date dateTimeDate = new Date(timeDate);
-//		System.out.println(cloud_topic+": Data em que foi recebida a mensagem do MQTT : "+dateTimeDate);
+		System.out.println(cloud_topic+": Data em que foi recebida a mensagem do MQTT : "+sdf.format(dateTimeDate));
 		dealWithData(message.toString());
 
 	}

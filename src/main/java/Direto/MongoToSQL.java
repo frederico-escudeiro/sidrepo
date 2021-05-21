@@ -38,6 +38,7 @@ public class MongoToSQL extends Thread {
 	// Tempo Datas
 	// "%Y-%m-%d'T'%H:%M:%S'Z'"
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	private Date currentDate = new Date();
 	private Date lateDate = new Date();
 	private long timeDifMilliSeconds = 3000; // delay na inserção e leitura de dados (1 segundo)
@@ -115,24 +116,26 @@ public class MongoToSQL extends Thread {
 			time = time * 1000;
 			currentDate = new Date(time);
 			long currentTime = currentDate.getTime();
-//			//APAGAR DAQUI
-//			long timeDate3 = new Date().getTime();
-//			Date dateTimeDate3 = new Date(timeDate3);
-//			System.out.println("T1: Data em que foi iniciada a query de pesquisa na base de dados mongo local : "+dateTimeDate3);
-//			//APAGAR ATE AQUI
-//			// APAGAR DAQUI
-//						System.out.println("T1: Intervalo de procura na base de dados mongo local : "
-//								+ df1.format(new Date(lateDate)) + " -> " + df1.format(new Date(currentTime)));
-//						// APAGAR ATE AQUI
+			//APAGAR DAQUI
+			long timeDate3 = new Date().getTime();
+			Date dateTimeDate3 = new Date(timeDate3);
+			System.out.println(tipoSensor+zonaID+": Data em que foi iniciada a query de pesquisa na base de dados mongo local : "+sdf.format(dateTimeDate3));
+			//APAGAR ATE AQUI
+			// APAGAR DAQUI
+						System.out.println(tipoSensor+zonaID+": Intervalo de procura na base de dados mongo local : "
+								+ sdf.format(new Date(lateDate)) + " -> " + sdf.format(new Date(currentTime)));
+						// APAGAR ATE AQUI
 			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
 			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
+
 			collection.find(filterLowAndUp).sort(new BasicDBObject("Tempo", 1)).into(listDocuments);
 //			//APAGAR DAQUI
 //			long timeDate4 = new Date().getTime();
 //			Date dateTimeDate4 = new Date(timeDate4);
 //			System.out.println("T1: Data em que foi acabada a query de pesquisa na base de dados mongo local : "+dateTimeDate4);
 //			//APAGAR ATE AQUI
+
 			if (!listDocuments.isEmpty()) {
 				dealWithDataToSQL(listDocuments);
 			}
@@ -160,6 +163,7 @@ public class MongoToSQL extends Thread {
 			char validacao;
 			if (!data1_final.equals(medicaoAnteriorData)) {
 //			System.out.println(document);
+
 				if (Double.parseDouble(data_medicao[1]) < limiteSuperior
 						&& Double.parseDouble(data_medicao[1]) > limiteInferior) {
 					validacao = valida.getValidacao(Double.parseDouble(data_medicao[1]));
