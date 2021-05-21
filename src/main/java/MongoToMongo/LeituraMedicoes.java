@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.ConnectionString;
+import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -102,8 +103,13 @@ public class LeituraMedicoes extends Thread{
    	 	// Delete All documents from collection Using blank BasicDBObjec
    	 	//BasicDBObject document = new BasicDBObject();
    	 	//mongoColLocal.deleteMany(document);
-  	 	
-   	 	this.recoverData();
+  	 	try {
+  	 		this.recoverData();
+  	 		this.deleteLocal();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+   	 	
    	 	
    	 	/*
    	 	// Limpar a memória antiga
@@ -114,7 +120,7 @@ public class LeituraMedicoes extends Thread{
     	endTime = System.nanoTime();
     	cleanDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Limpeza Dados local");
     	*/
-   	 	this.deleteLocal();
+   	 	
    	 	
     	System.out.print(headerMessage + countDatabaseMessage  + numOfDeletesMessage + cleanDatabaseMessage + "\n");
     	
@@ -179,7 +185,7 @@ public class LeituraMedicoes extends Thread{
 			countData.clear();
 		}
 		
-	public void recoverData() {
+	public void recoverData() throws MongoTimeoutException{
 		Date dateBegin;
 		Date dateEnd;
 		Document  result;
@@ -214,7 +220,10 @@ public class LeituraMedicoes extends Thread{
 		Bson queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
 		mongoColNuvem.find(queryFilterTogether).into(results);
 		lateDate=dateEnd;
+		
 		this.writeLocal(results);
+		
+		
 	}
 		
 	
@@ -259,10 +268,20 @@ public class LeituraMedicoes extends Thread{
     	readDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Leitura dos dados");
     	
     	if(results!=null) {
-    		writeLocal(results);
+    		try {
+    			writeLocal(results);
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+    		
     	}
 		while(cond) {
-			deleteLocal();
+			try {
+				deleteLocal();
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+			
 			System.out.println(headerMessage + intervalDataMessage + readDatabaseMessage + numOfReadsMessage + buildResultListMessage + writeDatabaseMessage + countDatabaseMessage + dataDistributionMessage + numOfDeletesMessage + cleanDatabaseMessage );
 			lateDate = currentDate;
 			
@@ -277,14 +296,23 @@ public class LeituraMedicoes extends Thread{
 			queryFilterUpper = Filters.lte("Data",df1.format(currentDate));
 			queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
 			
-
-			mongoColNuvem.find(queryFilterTogether).into(results);
+			try {
+				mongoColNuvem.find(queryFilterTogether).into(results);
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+			
 			
 			
 			endTime = System.nanoTime();
 			readDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Leitura dos dados");
 			if(results!=null) {
-				writeLocal(results);
+				try {
+					writeLocal(results);
+				} catch (Exception e) {
+					// TODO: handle exception
+				}
+				
 			}
 			try {
 				time = (new Date()).getTime() - timeDifMilliSeconds;
