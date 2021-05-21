@@ -133,47 +133,6 @@ public class LeituraMedicoes extends Thread{
 		return String.format("%s : %d ms\n", task, (endTime - startTime)/nanoToMilli);
 	}
 	
-	/*
-	// Função que escreve na base de dados local
-	private void writeLocal(List<Document> results) {
-		
-		numOfReadsMessage = String.format("Numero de documentos lidos: %d \n", results.size());
-		
-		startTime = System.nanoTime();
-		List<Document> dados = new ArrayList();
-		if(results.size() != 0) {
-			for(int i = 0; i != results.size(); i++) {
-				Document res_t1 = results.get(i);
-				try {
-					//Date fromDate = df1.parse(res_t1.getString("Data"));
-					Date fromDate = res_t1.getDate("Data");
-					List<String> medicoes = res_t1.getList("Medicoes", String.class);
-					for(int j = 0; j!= medicoes.size(); j++) {
-						Document doc = new Document();
-						doc.append("Tempo", new Date(fromDate.getTime()))
-							.append("Medicao", Double.parseDouble(medicoes.get(j)));
-						dados.add(doc);
-        		}
-				} catch (Exception e) {
-				// TODO Auto-generated catch block
-					e.printStackTrace();
-				
-				}
-			}
-		}
-		endTime = System.nanoTime();
-		buildResultListMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Modificacao dos dados");
-
-		startTime = System.nanoTime();
-		if(results.size() != 0) {
-			mongoColLocal.insertMany(dados);
-		}
-		endTime = System.nanoTime();
-		writeDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Escrita dos dados");
-		
-		dados.clear();
-	}
-	*/
 	
 	// Função que escreve na base de dados local
 		private void writeLocal(List<Document> results) {
@@ -290,44 +249,12 @@ public class LeituraMedicoes extends Thread{
 		startTime = System.nanoTime();
 		
 		
-		
-		
-		/*
-		Bson queryFilterTogether = Filters.gte("$expr", Arrays.asList(Filters.eq("$dateFromString", Filters.eq("dateString", "$Data")), 
-				currentDate));
-		//mongoColNuvem.find(queryFilterTogether).into(results);
-		*/
-		
 		Bson queryFilterLower = Filters.gt("Data",df1.format(lateDate));
 		Bson queryFilterUpper = Filters.lte("Data",df1.format(currentDate));
 		Bson queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
 		mongoColNuvem.find(queryFilterTogether).into(results);
 		
-		/*
-    	Bson queryFilter = Filters.eq("Data",df1.format(currentDate));
-    	mongoColNuvem.find(queryFilter).into(results);
-    	*/
-		
-    	/*
-    	//Codigo com match sugerido pelo professor
-		Bson matchStage = Aggregates.match(Filters.eq("Data",currentDate));
-		
-		Bson projectStage =new Document("$project", 
-			    new Document("Data", 
-			    	    new Document("$dateFromString", 
-			    	    new Document("dateString", "$_id.Data")))
-			    	            .append("Medicoes", 1L));
-		
-		Bson groupStage = new Document("$group", 
-			    new Document("_id", 
-			    	    new Document("Data", "$Data"))
-			    	            .append("Medicoes", 
-			    	    new Document("$push", "$Medicao")));
-		AggregateIterable<Document> iterable = mongoColNuvem.aggregate(Arrays.asList(groupStage,projectStage,matchStage)).allowDiskUse(true);
-		iterable.into(results);
-		*/
 	
-		
     	endTime = System.nanoTime();
     	readDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Leitura dos dados");
     	
@@ -350,34 +277,9 @@ public class LeituraMedicoes extends Thread{
 			queryFilterUpper = Filters.lte("Data",df1.format(currentDate));
 			queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
 			
-			/*
-			queryFilterTogether =Filters.and(Filters.gte("$expr", Arrays.asList(Filters.eq("$dateFromString", Filters.eq("dateString", "$Data")), 
-					lateDate)), Filters.lt("$expr", Arrays.asList(Filters.eq("$dateFromString", Filters.eq("dateString", "$Data")), 
-							currentDate)));
-			*/
-			
+
 			mongoColNuvem.find(queryFilterTogether).into(results);
 			
-			
-			/*
-			//Codigo com match sugerido pelo professor
-			matchStage = Aggregates.match(Filters.and(Filters.gt("Data",lateDate),Filters.lte("Data", currentDate)));
-			
-			projectStage =new Document("$project", 
-				    new Document("Data", 
-				    	    new Document("$dateFromString", 
-				    	    new Document("dateString", "$_id.Data")))
-				    	            .append("Medicoes", 1L));
-			
-			groupStage = new Document("$group", 
-				    new Document("_id", 
-				    	    new Document("Data", "$Data"))
-				    	            .append("Medicoes", 
-				    	    new Document("$push", "$Medicao")));
-
-			iterable = mongoColNuvem.aggregate(Arrays.asList(groupStage,projectStage,matchStage)).allowDiskUse(true);
-			iterable.into(results);
-			*/
 			
 			endTime = System.nanoTime();
 			readDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Leitura dos dados");
