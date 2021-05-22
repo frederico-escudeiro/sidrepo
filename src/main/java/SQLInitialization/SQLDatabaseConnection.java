@@ -132,36 +132,36 @@ public class SQLDatabaseConnection {
             //Criar User Administrador da Base de Dados
             String dropUserAdministradorBD = "DROP USER IF EXISTS adminBD@localhost;";
             String createAdministradorBD = "CREATE USER adminBD@localhost IDENTIFIED BY 'adminBD';";
-            statementLocalhost.executeUpdate(dropUserAdministradorBD);
-            statementLocalhost.executeUpdate(createAdministradorBD);
+//            statementLocalhost.executeUpdate(dropUserAdministradorBD);
+//            statementLocalhost.executeUpdate(createAdministradorBD);
 
             //criar procedimento do alerta
             String dropProcedimentoAlerta = "DROP PROCEDURE IF EXISTS `criar_alerta`";
-            String createAlertaProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `criar_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(100), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `horaEscrita`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem, current_timestamp()); END;";
+            String createAlertaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `criar_alerta`(IN `idCultura` INT, IN `idMedicao` INT, IN `tipoAlerta` VARCHAR(100), IN `mensagem` VARCHAR(200)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `alerta` (`idCultura`, `idMedicao`, `tipoAlerta`, `mensagem`, `horaEscrita`) VALUES (idCultura, idMedicao, tipoAlerta, mensagem, current_timestamp()); END;";
             statementLocalhost.executeUpdate(dropProcedimentoAlerta);
             statementLocalhost.executeUpdate(createAlertaProcedure);
 
             //criar procedimento da medicao
             String dropProcedimentoMedicao = "DROP PROCEDURE IF EXISTS `criar_medicao`";
-            String createMedicaoProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `criar_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
+            String createMedicaoProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `criar_medicao`(IN `idSensor` INT, IN `tempo` TIMESTAMP, IN `valorMedicao` DOUBLE, IN `validacao` CHAR(1)) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `medicao` (`idSensor`, `tempo`, `valorMedicao`, `validacao`) VALUES (idSensor, tempo, valorMedicao, validacao); END";
             statementLocalhost.executeUpdate(dropProcedimentoMedicao);
             statementLocalhost.executeUpdate(createMedicaoProcedure);
 
             //criar procedimento de criar cultura
             String dropProcedimentoCriarCultura = "DROP PROCEDURE IF EXISTS `criar_cultura`";
-            String createCriarCulturaProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `criar_cultura`(IN `nomeCultura` VARCHAR(50), IN `idZona` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (nomeCultura, NULL, idZona, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0); END";
+            String createCriarCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `criar_cultura`(IN `nomeCultura` VARCHAR(50), IN `idZona` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN INSERT INTO `cultura` (`nomeCultura`, `idUtilizador`, `idZona`, `lumLimSup`, `lumLimInf`, `tempLimSup`, `tempLimInf`, `humLimSup`, `humLimInf`, `lumLimSupAlerta`, `lumLimInfAlerta`, `tempLimSupAlerta`, `tempLimInfAlerta`, `humLimSupAlerta`, `humLimInfAlerta`, `isValido`) VALUES (nomeCultura, NULL, idZona, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0); END";
             statementLocalhost.executeUpdate(dropProcedimentoCriarCultura);
             statementLocalhost.executeUpdate(createCriarCulturaProcedure);
 
             //criar procedimento de remover cultura
             String dropProcedimentoRemoverCultura = "DROP PROCEDURE IF EXISTS `remover_cultura`";
-            String createRemoverCulturaProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `remover_cultura`(IN `idCultura` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN DELETE FROM `cultura` WHERE `idCultura` = idCultura; END;";
+            String createRemoverCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `remover_cultura`(IN `idCultura` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN DELETE FROM `cultura` WHERE `idCultura` = idCultura; END;";
             statementLocalhost.executeUpdate(dropProcedimentoRemoverCultura);
             statementLocalhost.executeUpdate(createRemoverCulturaProcedure);
 
             //criar procedimento de alterar cultura
             String dropProcedimentoAlterarCultura = "DROP PROCEDURE IF EXISTS `alterar_cultura`";
-            String createAlterarCulturaProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `alterar_cultura`(IN `idCultura` INT, IN `idZona` INT, IN `nomeCultura` VARCHAR(50), IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN \n" +
+            String createAlterarCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_cultura`(IN `idCultura` INT, IN `idZona` INT, IN `nomeCultura` VARCHAR(50), IN `lumLimSup` DOUBLE, IN `lumLimInf` DOUBLE, IN `tempLimSup` DOUBLE, IN `tempLimInf` DOUBLE, IN `humLimSup` DOUBLE, IN `humLimInf` DOUBLE, IN `lumLimSupAlerta` DOUBLE, IN `lumLimInfAlerta` DOUBLE, IN `tempLimSupAlerta` DOUBLE, IN `tempLimInfAlerta` DOUBLE, IN `humLimSupAlerta` DOUBLE, IN `humLimInfAlerta` DOUBLE) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN \n" +
                     "\n" +
                     "SET @cultura_valida :=(SELECT count(*) FROM utilizador,cultura WHERE cultura.idUtilizador=utilizador.idUtilizador and utilizador.email=(select substring_index(user(),'@localhost', 1)) and cultura.idCultura=idCultura); \n" +
                     "\n" +
@@ -187,7 +187,7 @@ public class SQLDatabaseConnection {
 
             //criar procedimento de atribuir um utilizador a uma cultura
             String dropProcedimentoAtribuirUtilizadorCultura = "DROP PROCEDURE IF EXISTS `atribuir_cultura_investigador`";
-            String createAtribuirUtilizadorCulturaProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `atribuir_cultura_investigador`(IN `idCultura` INT, IN `idUtilizador` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN \n" +
+            String createAtribuirUtilizadorCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atribuir_cultura_investigador`(IN `idCultura` INT, IN `idUtilizador` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN \n" +
                     "\n" +
                     "IF (SELECT tipoUtilizador FROM utilizador WHERE utilizador.idUtilizador = idUtilizador) = 'i' THEN \n" +
                     "\tIF (SELECT COUNT(*) FROM cultura WHERE idCultura = cultura.idCultura and cultura.lumLimSup > cultura.lumLimSupAlerta and cultura.lumLimSupAlerta > cultura.lumLimInfAlerta and cultura.lumLimInfAlerta > cultura.lumLimInf and cultura.tempLimSup >  cultura.tempLimSupAlerta and cultura.tempLimSupAlerta > cultura.tempLimInfAlerta and cultura.tempLimInfAlerta > cultura.tempLimInf and cultura.humLimSup >  cultura.humLimSupAlerta and cultura.humLimSupAlerta > cultura.humLimInfAlerta and cultura.humLimInfAlerta > cultura.humLimInf) > 0 THEN\n" +
@@ -205,25 +205,25 @@ public class SQLDatabaseConnection {
 
             //criar procedimento de desatribuir um utilizador a uma cultura
             String dropProcedimentoDesatribuirUtilizadorCultura = "DROP PROCEDURE IF EXISTS `desatribuir_cultura_investigador`";
-            String createDesatribuirUtilizadorCulturaProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `desatribuir_cultura_investigador`(IN `idCultura` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN UPDATE `cultura` SET `idUtilizador` = NULL, `isValido` = 0 WHERE `cultura`.`idCultura` = idCultura; END;";
+            String createDesatribuirUtilizadorCulturaProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `desatribuir_cultura_investigador`(IN `idCultura` INT) NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN UPDATE `cultura` SET `idUtilizador` = NULL, `isValido` = 0 WHERE `cultura`.`idCultura` = idCultura; END;";
             statementLocalhost.executeUpdate(dropProcedimentoDesatribuirUtilizadorCultura);
             statementLocalhost.executeUpdate(createDesatribuirUtilizadorCulturaProcedure);
 
             //criar procedimento de remover utilizador
             String dropProcedimentoRemoverUtilizador = "DROP PROCEDURE IF EXISTS `remover_utilizador`";
-            String createRemoverUtilizadorProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `remover_utilizador`(IN `email` VARCHAR(50)) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN DELETE FROM `utilizador` WHERE `email` = email; SET @user := CONCAT('DROP USER ''', email, '''@''localhost'''); PREPARE stmt FROM @user; EXECUTE stmt; END;";
+            String createRemoverUtilizadorProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `remover_utilizador`(IN `email` VARCHAR(50)) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN DELETE FROM `utilizador` WHERE `email` = email; SET @user := CONCAT('DROP USER ''', email, '''@''localhost'''); PREPARE stmt FROM @user; EXECUTE stmt; END;";
             statementLocalhost.executeUpdate(dropProcedimentoRemoverUtilizador);
             statementLocalhost.executeUpdate(createRemoverUtilizadorProcedure);
 
             //criar procedimento de alterar utilizador
             String dropProcedimentoAlterarUtilizador = "DROP PROCEDURE IF EXISTS `alterar_utilizador`";
-            String createAlterarUtilizadorProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `alterar_utilizador`(IN `emailInput` VARCHAR(50), IN `nomeUtilizadorInput` VARCHAR(50), IN `intervaloMinimoAvisosInput` TIME) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN UPDATE `utilizador` SET `nomeUtilizador`= nomeUtilizadorInput, `intervaloMinimoAvisos` = intervaloMinimoAvisosInput WHERE `email` = emailInput; END;";
+            String createAlterarUtilizadorProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `alterar_utilizador`(IN `emailInput` VARCHAR(50), IN `nomeUtilizadorInput` VARCHAR(50), IN `intervaloMinimoAvisosInput` TIME) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN UPDATE `utilizador` SET `nomeUtilizador`= nomeUtilizadorInput, `intervaloMinimoAvisos` = intervaloMinimoAvisosInput WHERE `email` = emailInput; END;";
             statementLocalhost.executeUpdate(dropProcedimentoAlterarUtilizador);
             statementLocalhost.executeUpdate(createAlterarUtilizadorProcedure);
 
             //criar procedimento que cria um utilizador
             String dropProcedimentoUtilizador = "DROP PROCEDURE IF EXISTS `criar_utilizador`";
-            String createUtilizadorProcedure = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `criar_utilizador`(IN `username` VARCHAR(50), IN `email` VARCHAR(50), IN `pwd` VARCHAR(50), IN `tipoUtilizador` CHAR(1), IN `intervaloMinimoAvisos` TIME) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN\r\n"
+            String createUtilizadorProcedure = "CREATE DEFINER=`root`@`localhost` PROCEDURE `criar_utilizador`(IN `username` VARCHAR(50), IN `email` VARCHAR(50), IN `pwd` VARCHAR(50), IN `tipoUtilizador` CHAR(1), IN `intervaloMinimoAvisos` TIME) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN\r\n"
             		+ "\r\n"
             		+ "IF tipoUtilizador = 'A' or tipoUtilizador = 'I' or tipoUtilizador = 'T' THEN\r\n"
             		+ "SET @user := CONCAT('CREATE USER ''', email, '''@''localhost''', ' IDENTIFIED BY ''', pwd, '''');\r\n"
@@ -258,13 +258,13 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que atualiza a lista de alertas mostrada
             String dropProcedimentoAtualizarAlertas = "DROP PROCEDURE IF EXISTS `atualizar_alertas`";
-            String createUtilizadorProcedureAtualizarAlertas = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `atualizar_alertas`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND alerta.horaEscrita > tempo; END";
+            String createUtilizadorProcedureAtualizarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND alerta.horaEscrita > tempo; END";
             statementLocalhost.executeUpdate(dropProcedimentoAtualizarAlertas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureAtualizarAlertas);
             
             //criar procedimento que atualiza a lista de alertas mostrada
             String dropProcedimentoAtualizarAlertasTecnico = "DROP PROCEDURE IF EXISTS `atualizar_alertas_tecnico`";
-            String createUtilizadorProcedureAtualizarAlertasTecnico = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `atualizar_alertas_tecnico`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN \r\n"
+            String createUtilizadorProcedureAtualizarAlertasTecnico = "CREATE DEFINER=`root`@`localhost` PROCEDURE `atualizar_alertas_tecnico`(IN `tempo` TIMESTAMP) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN \r\n"
             		+ "\r\n"
             		+ "DROP TEMPORARY TABLE IF EXISTS alertas_tecnico;\r\n"
             		+ "CREATE TEMPORARY TABLE alertas_tecnico (idAlerta INT, tipoAlerta VARCHAR(100), mensagem VARCHAR(200), horaEscrita TIMESTAMP, idZona INT, valorMedicao DOUBLE, idMedicao INT, tipoSensor CHAR(1));\r\n"
@@ -294,13 +294,13 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que lista alertas
             String dropProcedimentoListarAlertas = "DROP PROCEDURE IF EXISTS `listar_alertas`";
-            String createUtilizadorProcedureListarAlertas = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `listar_alertas`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta, alerta.mensagem, alerta.horaEscrita, medicao.valorMedicao, cultura.idZona, cultura.nomeCultura, cultura.idCultura, sensor.tipoSensor, utilizador.idUtilizador FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND DATE(alerta.horaEscrita) = date; END";
+            String createUtilizadorProcedureListarAlertas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT alerta.tipoAlerta, alerta.mensagem, alerta.horaEscrita, medicao.valorMedicao, cultura.idZona, cultura.nomeCultura, cultura.idCultura, sensor.tipoSensor, utilizador.idUtilizador FROM alerta, medicao, cultura, utilizador, sensor WHERE medicao.idMedicao=alerta.idMedicao AND medicao.idSensor=sensor.idSensor AND cultura.idCultura=alerta.idCultura AND utilizador.idUtilizador=cultura.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND DATE(alerta.horaEscrita) = date; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarAlertas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarAlertas);
             
             //criar procedimento que lista alertas do tecnico
             String dropProcedimentoListarAlertasTecnico = "DROP PROCEDURE IF EXISTS `listar_alertas_tecnico`";
-            String createUtilizadorProcedureListarAlertasTecnico = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `listar_alertas_tecnico`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN \r\n"
+            String createUtilizadorProcedureListarAlertasTecnico = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_alertas_tecnico`(IN `date` DATE) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN \r\n"
             		+ "\r\n"
             		+ "DROP TEMPORARY TABLE IF EXISTS alertas_tecnico;\r\n"
             		+ "CREATE TEMPORARY TABLE alertas_tecnico (idAlerta INT, tipoAlerta VARCHAR(100), mensagem VARCHAR(200), horaEscrita TIMESTAMP, idZona INT, valorMedicao DOUBLE, idMedicao INT, tipoSensor CHAR(1));\r\n"
@@ -331,45 +331,45 @@ public class SQLDatabaseConnection {
 
             //criar procedimento que lista culturas
             String dropProcedimentoListarCulturas = "DROP PROCEDURE IF EXISTS `listar_culturas`";
-            String createUtilizadorProcedureListarCulturas = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `listar_culturas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)); END";
+            String createUtilizadorProcedureListarCulturas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_culturas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)); END";
             statementLocalhost.executeUpdate(dropProcedimentoListarCulturas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarCulturas);
             
             //criar procedimento que lista culturas válidas
             String dropProcedimentoListarCulturasValidas = "DROP PROCEDURE IF EXISTS `listar_culturas_validas`";
-            String createUtilizadorProcedureListarCulturasValidas = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `listar_culturas_validas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)) and cultura.isValido=1; END";
+            String createUtilizadorProcedureListarCulturasValidas = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_culturas_validas`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT * FROM cultura INNER JOIN utilizador ON cultura.idUtilizador=utilizador.idUtilizador WHERE utilizador.email = (select substring_index(user(),'@localhost', 1)) and cultura.isValido=1; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarCulturasValidas);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarCulturasValidas);
 
             //criar procedimento que lista medicoes
             String dropProcedimentoListarMedicoes = "DROP PROCEDURE IF EXISTS `listar_medicoes`";
-            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `listar_medicoes`(IN `tempo` INT, IN `zona` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, medicao.idMedicao, medicao.validacao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE zona.idZona = zona AND medicao.tempo >= now() - interval tempo minute ORDER BY medicao.tempo ASC; END";
+            String createUtilizadorProcedureListarMedicoes = "CREATE DEFINER=`root`@`localhost` PROCEDURE `listar_medicoes`(IN `tempo` INT, IN `zona` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT medicao.tempo, medicao.valorMedicao, medicao.idMedicao, medicao.validacao, sensor.tipoSensor, zona.idZona FROM medicao JOIN sensor ON sensor.idSensor=medicao.idSensor JOIN zona ON zona.idZona=sensor.idZona WHERE zona.idZona = zona AND medicao.tempo >= now() - interval tempo minute ORDER BY medicao.tempo ASC; END";
             statementLocalhost.executeUpdate(dropProcedimentoListarMedicoes);
             statementLocalhost.executeUpdate(createUtilizadorProcedureListarMedicoes);
 
 
             //criar procedimento que mostra cultura
             String dropProcedimentoMostraCultura = "DROP PROCEDURE IF EXISTS `mostra_cultura`";
-            String createUtilizadorProcedureMostraCultura = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `mostra_cultura`(IN `idCultura` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT nomeCultura,idZona,nomeUtilizador, lumLimSup, lumLimInf, tempLimSup, tempLimInf, humLimSup, humLimInf, lumLimSupAlerta, lumLimInfAlerta, tempLimSupAlerta, tempLimInfAlerta, humLimSupAlerta, humLimInfAlerta FROM cultura, utilizador WHERE cultura.idUtilizador=utilizador.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND cultura.idCultura=idCultura; END";
+            String createUtilizadorProcedureMostraCultura = "CREATE DEFINER=`root`@`localhost` PROCEDURE `mostra_cultura`(IN `idCultura` INT) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT nomeCultura,idZona,nomeUtilizador, lumLimSup, lumLimInf, tempLimSup, tempLimInf, humLimSup, humLimInf, lumLimSupAlerta, lumLimInfAlerta, tempLimSupAlerta, tempLimInfAlerta, humLimSupAlerta, humLimInfAlerta FROM cultura, utilizador WHERE cultura.idUtilizador=utilizador.idUtilizador AND utilizador.email=(select substring_index(user(),'@localhost', 1)) AND cultura.idCultura=idCultura; END";
             statementLocalhost.executeUpdate(dropProcedimentoMostraCultura);
             statementLocalhost.executeUpdate(createUtilizadorProcedureMostraCultura);
 
             //criar procedimento que mostra utilizador
             String dropProcedimentoMostraUtilizador = "DROP PROCEDURE IF EXISTS `mostra_utilizador`";
-            String createUtilizadorProcedureMostraUtilizador = "CREATE DEFINER=`adminBD`@`localhost` PROCEDURE `mostra_utilizador`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT nomeUtilizador, intervaloMinimoAvisos FROM utilizador WHERE email=(select substring_index(user(),'@localhost', 1)); END";
+            String createUtilizadorProcedureMostraUtilizador = "CREATE DEFINER=`root`@`localhost` PROCEDURE `mostra_utilizador`() NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN SELECT nomeUtilizador, intervaloMinimoAvisos FROM utilizador WHERE email=(select substring_index(user(),'@localhost', 1)); END";
             statementLocalhost.executeUpdate(dropProcedimentoMostraUtilizador);
             statementLocalhost.executeUpdate(createUtilizadorProcedureMostraUtilizador);
 
             //criar trigger do limite de alerta de temperatura
             String dropTriggerAlertaTemperatura = "DROP TRIGGER IF EXISTS `alerta_temperatura`";
-            String createTriggerAlertaTemperatura = "CREATE DEFINER=`adminBD`@`localhost` TRIGGER `alerta_temperatura` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\r\n"
+            String createTriggerAlertaTemperatura = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_temperatura` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\r\n"
             		+ "DECLARE id int;\r\n"
             		+ "DECLARE isRiscoModerado int;\r\n"
-            		+ "CREATE TEMPORARY TABLE culturas_temperatura (idCultura int);\r\n"
-            		+ "CREATE TEMPORARY TABLE ultima_medicao_temperatura (tipoAlerta varchar(100), tempo timestamp);\r\n"
             		+ "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\r\n"
             		+ "\r\n"
             		+ "IF @tipo = 'T' and new.validacao = 'v' THEN\r\n"
+            		+ "CREATE TEMPORARY TABLE culturas_temperatura (idCultura int);\r\n"
+            		+ "CREATE TEMPORARY TABLE ultima_medicao_temperatura (tipoAlerta varchar(100), tempo timestamp);\r\n"
             		+ "INSERT INTO culturas_temperatura (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao and cultura.isValido=1);\r\n"
             		+ "WHILE EXISTS(SELECT * FROM culturas_temperatura) DO\r\n"
             		+ "SET @id := (SELECT * FROM culturas_temperatura LIMIT 1);\r\n"
@@ -419,89 +419,24 @@ public class SQLDatabaseConnection {
             		+ "END CASE;\r\n"
             		+ "DELETE FROM ultima_medicao_temperatura LIMIT 1;\r\n"
             		+ "END WHILE;\r\n"
-            		+ "END IF;\r\n"
             		+ "DROP TEMPORARY TABLE culturas_temperatura;\r\n"
             		+ "DROP TEMPORARY TABLE ultima_medicao_temperatura;\r\n"
+            		+ "END IF;\r\n"
             		+ "END";
             statementLocalhost.executeUpdate(dropTriggerAlertaTemperatura);
             statementLocalhost.executeUpdate(createTriggerAlertaTemperatura);
 
             //criar trigger do limite de alerta de humidade
             String dropTriggerAlertaHumidade = "DROP TRIGGER IF EXISTS `alerta_humidade`";
-            String createTriggerAlertaHumidade = "CREATE DEFINER=`adminBD`@`localhost` TRIGGER `alerta_humidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\r\n"
+            String createTriggerAlertaHumidade = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_humidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\r\n"
             		+ "DECLARE id int;\r\n"
             		+ "DECLARE isRiscoModerado int;\r\n"
-            		+ "CREATE TEMPORARY TABLE culturas_humidade (idCultura int);\r\n"
-            		+ "CREATE TEMPORARY TABLE ultima_medicao_humidade (tipoAlerta varchar(100), tempo timestamp);\r\n"
-            		+ "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\r\n"
             		+ "\r\n"
-            		+ "IF @tipo = 'H' and new.validacao = 'v' THEN\r\n"
-            		+ "INSERT INTO culturas_humidade (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao and cultura.isValido=1);\r\n"
-            		+ "WHILE EXISTS(SELECT * FROM culturas_humidade) DO\r\n"
-            		+ "SET @id := (SELECT * FROM culturas_humidade LIMIT 1);\r\n"
-            		+ "SET @nomeCultura := (SELECT nomeCultura FROM cultura WHERE cultura.idCultura=@id);\r\n"
-            		+ "DELETE FROM culturas_humidade WHERE (idCultura = @id);\r\n"
-            		+ "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);\r\n"
-            		+ "INSERT INTO ultima_medicao_humidade (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='H' ORDER BY medicao.tempo DESC LIMIT 1);\r\n"
-            		+ "CASE\r\n"
-            		+ "WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>=cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<=cultura.humLimInfAlerta))) > 0 THEN\r\n"
-            		+ "SET @tipo_nova_medicao := 'Alerta';\r\n"
-            		+ "WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao>=cultura.humLimSup) OR (new.valorMedicao<=cultura.humLimInf))) > 0 THEN\r\n"
-            		+ "SET @tipo_nova_medicao := 'Critico';\r\n"
-            		+ "ELSE\r\n"
-            		+ "SET @tipo_nova_medicao := 'Bom';\r\n"
-            		+ "END CASE;\r\n"
-            		+ "CASE\r\n"
-            		+ "WHEN (SELECT COUNT(*) FROM ultima_medicao_humidade) = 0 OR (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Humidade Totalmente Recuperada' OR (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Recuperação da Humidade Crítica - Estado Atual Bom' THEN\r\n"
-            		+ "    CASE\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Alerta' THEN\r\n"
-            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', concat('A humidade encontra-se em estado de alerta para a cultura ',@nomeCultura,'!'));\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Critico' THEN\r\n"
-            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica' , concat('A humidade atingiu valores não suportados pela cultura ',@nomeCultura,'!'));\r\n"
-            		+ "        ELSE BEGIN END;\r\n"
-            		+ "   	END CASE;\r\n"
-            		+ "WHEN (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Alerta Humidade' OR (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Recuperação da Humidade Crítica - Estado Atual Alerta' THEN\r\n"
-            		+ "    CASE\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Bom' THEN\r\n"
-            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Totalmente Recuperada', concat('A humidade já não se encontra em estado de alerta para a cultura ',@nomeCultura,', está tudo bem com a sua cultura!'));\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Alerta' THEN\r\n"
-            		+ "        IF new.tempo > ADDTIME(@interval,(SELECT tempo FROM ultima_medicao_humidade)) THEN\r\n"
-            		+ "            CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', concat('A humidade encontra-se em estado de alerta para a cultura ',@nomeCultura,'!'));\r\n"
-            		+ "        END IF;\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Critico' THEN\r\n"
-            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', concat('A humidade atingiu valores não suportados pela cultura ',@nomeCultura,'!'));\r\n"
-            		+ "    END CASE;\r\n"
-            		+ "WHEN (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Humidade Crítica' THEN\r\n"
-            		+ "    CASE\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Bom' THEN\r\n"
-            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Bom', concat('A cultura ',@nomeCultura,' já não se encontra em estado crítico devido à humidade, está tudo bem com a sua cultura!'));\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Alerta' THEN\r\n"
-            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Alerta', concat('A cultura ',@nomeCultura,' já não se encontra em estado crítico devido à humidade, mas ainda está em estado de alerta!'));\r\n"
-            		+ "    WHEN @tipo_nova_medicao = 'Critico' THEN\r\n"
-            		+ "        IF new.tempo > ADDTIME(@interval,(SELECT tempo FROM ultima_medicao_humidade)) THEN\r\n"
-            		+ "            CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', concat('A humidade atingiu valores não suportados pela cultura ',@nomeCultura,'!'));\r\n"
-            		+ "        END IF;\r\n"
-            		+ "    END CASE;\r\n"
-            		+ "END CASE;\r\n"
-            		+ "DELETE FROM ultima_medicao_humidade LIMIT 1;\r\n"
-            		+ "END WHILE;\r\n"
-            		+ "END IF;\r\n"
-            		+ "DROP TEMPORARY TABLE culturas_humidade;\r\n"
-            		+ "DROP TEMPORARY TABLE ultima_medicao_humidade;\r\n"
-            		+ "END";
-            statementLocalhost.executeUpdate(dropTriggerAlertaHumidade);
-            statementLocalhost.executeUpdate(createTriggerAlertaHumidade);
-
-            //criar trigger do limite de alerta de luminosidade
-            String dropTriggerAlertaLuminosidade = "DROP TRIGGER IF EXISTS `alerta_luminosidade`";
-            String createTriggerAlertaLuminosidade = "CREATE DEFINER=`adminBD`@`localhost` TRIGGER `alerta_luminosidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\r\n"
-            		+ "DECLARE id int;\r\n"
-            		+ "DECLARE isRiscoModerado int;\r\n"
-            		+ "CREATE TEMPORARY TABLE culturas_luminosidade (idCultura int);\r\n"
-            		+ "CREATE TEMPORARY TABLE ultima_medicao_luminosidade (tipoAlerta varchar(100), tempo timestamp);\r\n"
             		+ "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\r\n"
             		+ "\r\n"
             		+ "IF @tipo = 'L' and new.validacao = 'v' THEN\r\n"
+            		+ "CREATE TEMPORARY TABLE culturas_luminosidade (idCultura int);\r\n"
+            		+ "CREATE TEMPORARY TABLE ultima_medicao_luminosidade (tipoAlerta varchar(100), tempo timestamp);\r\n"
             		+ "INSERT INTO culturas_luminosidade (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao and cultura.isValido=1);\r\n"
             		+ "WHILE EXISTS(SELECT * FROM culturas_luminosidade) DO\r\n"
             		+ "SET @id := (SELECT * FROM culturas_luminosidade LIMIT 1);\r\n"
@@ -551,16 +486,83 @@ public class SQLDatabaseConnection {
             		+ "END CASE;\r\n"
             		+ "DELETE FROM ultima_medicao_luminosidade LIMIT 1;\r\n"
             		+ "END WHILE;\r\n"
-            		+ "END IF;\r\n"
             		+ "DROP TEMPORARY TABLE culturas_luminosidade;\r\n"
             		+ "DROP TEMPORARY TABLE ultima_medicao_luminosidade;\r\n"
+            		+ "END IF;\r\n"
+            		+ "END";
+            statementLocalhost.executeUpdate(dropTriggerAlertaHumidade);
+            statementLocalhost.executeUpdate(createTriggerAlertaHumidade);
+
+            //criar trigger do limite de alerta de luminosidade
+            String dropTriggerAlertaLuminosidade = "DROP TRIGGER IF EXISTS `alerta_luminosidade`";
+            String createTriggerAlertaLuminosidade = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_luminosidade` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN\r\n"
+            		+ "DECLARE id int;\r\n"
+            		+ "DECLARE isRiscoModerado int;\r\n"
+            		+ "\r\n"
+            		+ "SET @tipo :=(SELECT DISTINCT tipoSensor FROM medicao, sensor WHERE new.idSensor=sensor.idSensor);\r\n"
+            		+ "\r\n"
+            		+ "IF @tipo = 'H' and new.validacao = 'v' THEN\r\n"
+            		+ "CREATE TEMPORARY TABLE culturas_humidade (idCultura int);\r\n"
+            		+ "CREATE TEMPORARY TABLE ultima_medicao_humidade (tipoAlerta varchar(100), tempo timestamp);\r\n"
+            		+ "INSERT INTO culturas_humidade (SELECT idCultura FROM cultura, medicao, sensor, zona WHERE cultura.idZona=zona.idZona AND zona.idZona=sensor.idZona AND medicao.idSensor=sensor.idSensor AND new.idMedicao=medicao.idMedicao and cultura.isValido=1);\r\n"
+            		+ "WHILE EXISTS(SELECT * FROM culturas_humidade) DO\r\n"
+            		+ "SET @id := (SELECT * FROM culturas_humidade LIMIT 1);\r\n"
+            		+ "SET @nomeCultura := (SELECT nomeCultura FROM cultura WHERE cultura.idCultura=@id);\r\n"
+            		+ "DELETE FROM culturas_humidade WHERE (idCultura = @id);\r\n"
+            		+ "SET @interval :=(SELECT intervaloMinimoAvisos FROM utilizador,cultura WHERE @id=cultura.idCultura and cultura.idUtilizador=utilizador.idUtilizador);\r\n"
+            		+ "INSERT INTO ultima_medicao_humidade (SELECT tipoAlerta,tempo FROM alerta, medicao,sensor  WHERE @id=alerta.idCultura and alerta.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.tipoSensor='H' ORDER BY medicao.tempo DESC LIMIT 1);\r\n"
+            		+ "CASE\r\n"
+            		+ "WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao<cultura.humLimSup AND new.valorMedicao>=cultura.humLimSupAlerta) OR (new.valorMedicao>cultura.humLimInf AND new.valorMedicao<=cultura.humLimInfAlerta))) > 0 THEN\r\n"
+            		+ "SET @tipo_nova_medicao := 'Alerta';\r\n"
+            		+ "WHEN (SELECT COUNT(*) FROM cultura WHERE @id=cultura.idCultura AND ((new.valorMedicao>=cultura.humLimSup) OR (new.valorMedicao<=cultura.humLimInf))) > 0 THEN\r\n"
+            		+ "SET @tipo_nova_medicao := 'Critico';\r\n"
+            		+ "ELSE\r\n"
+            		+ "SET @tipo_nova_medicao := 'Bom';\r\n"
+            		+ "END CASE;\r\n"
+            		+ "CASE\r\n"
+            		+ "WHEN (SELECT COUNT(*) FROM ultima_medicao_humidade) = 0 OR (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Humidade Totalmente Recuperada' OR (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Recuperação da Humidade Crítica - Estado Atual Bom' THEN\r\n"
+            		+ "    CASE\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Alerta' THEN\r\n"
+            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', concat('A humidade encontra-se em estado de alerta para a cultura ',@nomeCultura,'!'));\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Critico' THEN\r\n"
+            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica' , concat('A humidade atingiu valores não suportados pela cultura ',@nomeCultura,'!'));\r\n"
+            		+ "        ELSE BEGIN END;\r\n"
+            		+ "   	END CASE;\r\n"
+            		+ "WHEN (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Alerta Humidade' OR (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Recuperação da Humidade Crítica - Estado Atual Alerta' THEN\r\n"
+            		+ "    CASE\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Bom' THEN\r\n"
+            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Totalmente Recuperada', concat('A humidade já não se encontra em estado de alerta para a cultura ',@nomeCultura,', está tudo bem com a sua cultura!'));\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Alerta' THEN\r\n"
+            		+ "        IF new.tempo > ADDTIME(@interval,(SELECT tempo FROM ultima_medicao_humidade)) THEN\r\n"
+            		+ "            CALL `criar_alerta`(@id, new.idMedicao , 'Alerta Humidade', concat('A humidade encontra-se em estado de alerta para a cultura ',@nomeCultura,'!'));\r\n"
+            		+ "        END IF;\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Critico' THEN\r\n"
+            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', concat('A humidade atingiu valores não suportados pela cultura ',@nomeCultura,'!'));\r\n"
+            		+ "    END CASE;\r\n"
+            		+ "WHEN (SELECT tipoAlerta FROM ultima_medicao_humidade) = 'Humidade Crítica' THEN\r\n"
+            		+ "    CASE\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Bom' THEN\r\n"
+            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Bom', concat('A cultura ',@nomeCultura,' já não se encontra em estado crítico devido à humidade, está tudo bem com a sua cultura!'));\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Alerta' THEN\r\n"
+            		+ "        CALL `criar_alerta`(@id, new.idMedicao , 'Recuperação da Humidade Crítica - Estado Atual Alerta', concat('A cultura ',@nomeCultura,' já não se encontra em estado crítico devido à humidade, mas ainda está em estado de alerta!'));\r\n"
+            		+ "    WHEN @tipo_nova_medicao = 'Critico' THEN\r\n"
+            		+ "        IF new.tempo > ADDTIME(@interval,(SELECT tempo FROM ultima_medicao_humidade)) THEN\r\n"
+            		+ "            CALL `criar_alerta`(@id, new.idMedicao , 'Humidade Crítica', concat('A humidade atingiu valores não suportados pela cultura ',@nomeCultura,'!'));\r\n"
+            		+ "        END IF;\r\n"
+            		+ "    END CASE;\r\n"
+            		+ "END CASE;\r\n"
+            		+ "DELETE FROM ultima_medicao_humidade LIMIT 1;\r\n"
+            		+ "END WHILE;\r\n"
+            		+ "DROP TEMPORARY TABLE culturas_humidade;\r\n"
+            		+ "DROP TEMPORARY TABLE ultima_medicao_humidade;\r\n"
+            		+ "END IF;\r\n"
             		+ "END";
             statementLocalhost.executeUpdate(dropTriggerAlertaLuminosidade);
             statementLocalhost.executeUpdate(createTriggerAlertaLuminosidade);
 
             //criar trigger de alerta de medicao fora dos limites
             String dropTriggerAlertaSensor = "DROP TRIGGER IF EXISTS `alerta_sensor`";
-            String createTriggerAlertaSensor = "CREATE DEFINER=`adminBD`@`localhost` TRIGGER `alerta_sensor` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN SET @tipoSensor := (SELECT sensor.tipoSensor FROM medicao, sensor, zona WHERE new.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.idZona=zona.idZona); SET @zona := (SELECT zona.idZona FROM medicao, sensor, zona WHERE new.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.idZona=zona.idZona); SET @tipoAlerta := concat('Alerta Valor de Medição Fora dos Limites do Sensor ', @tipoSensor, @zona); IF new.validacao = 's' THEN CALL `criar_alerta`(NULL, new.idMedicao, @tipoAlerta, 'Foi registada uma medição com um valor que ultrapassa os limites de hardware do sensor.'); END IF; END";
+            String createTriggerAlertaSensor = "CREATE DEFINER=`root`@`localhost` TRIGGER `alerta_sensor` AFTER INSERT ON `medicao` FOR EACH ROW BEGIN SET @tipoSensor := (SELECT sensor.tipoSensor FROM medicao, sensor, zona WHERE new.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.idZona=zona.idZona); SET @zona := (SELECT zona.idZona FROM medicao, sensor, zona WHERE new.idMedicao=medicao.idMedicao and medicao.idSensor=sensor.idSensor and sensor.idZona=zona.idZona); SET @tipoAlerta := concat('Alerta Sensor ', @tipoSensor, @zona, ' - Fora dos Limites do Sensor!'); IF new.validacao = 's' THEN CALL `criar_alerta`(NULL, new.idMedicao, @tipoAlerta, 'Foi registada uma medição com um valor que ultrapassa os limites de hardware do sensor.'); END IF; END";
             statementLocalhost.executeUpdate(dropTriggerAlertaSensor);
             statementLocalhost.executeUpdate(createTriggerAlertaSensor);
 
@@ -693,10 +695,17 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(grantDefaultRoleJava);
             statementLocalhost.executeUpdate(setDefaultRoleJava);
             
-            ;
-
-            String privilegiosAdministradorBD = "GRANT ALL ON sid2021.* TO 'adminBD'@'localhost' ";
-            statementLocalhost.executeUpdate(privilegiosAdministradorBD);
+            
+            String privilegiosAdministradorBDGrant = "GRANT GRANT OPTION ON *.* TO 'adminBD'@'localhost'";
+            String privilegiosAdministradorBD = "GRANT ALL PRIVILEGES ON sid2021.* TO 'adminBD'@'localhost' WITH GRANT OPTION";
+            String privilegiosAdministradorBDCreateUser = "GRANT CREATE USER ON *.* TO 'adminBD'@'localhost'";
+            String privilegiosAdministradorBDDropUser = "GRANT DROP USER ON *.* TO 'adminBD'@'localhost'";    
+//            statementLocalhost.executeUpdate(privilegiosAdministradorBDCreateUser);
+//            statementLocalhost.executeUpdate(privilegiosAdministradorBD);
+//            statementLocalhost.executeUpdate(privilegiosAdministradorBDGrant);
+//            statementLocalhost.executeUpdate(privilegiosAdministradorBDProcedures);
+            
+//            statementLocalhost.executeUpdate(privilegiosAdministradorBDDropUser);
             
      
 
