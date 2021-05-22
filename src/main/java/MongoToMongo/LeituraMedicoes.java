@@ -11,8 +11,8 @@ import java.util.Map;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.ConnectionString;
-import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -44,11 +44,16 @@ public class LeituraMedicoes extends Thread{
 	private long timeDifMilliSeconds = 1000;			//delay na inserção e leitura de dados (1 segundo)
 	private long timeKeepMilliSeconds = 1000*60*60*12;	//tempo que os dados vão estar guardados (12 horas)
 	private long numberOfDocsRemoved = 200;
+	private Date limInfDateFind;
 	
 	// Variáveis do tempo de execução de tarefas
 	private long startTime = System.nanoTime();
 	private long endTime = System.nanoTime();
 	private long nanoToMilli = 1000000;
+	
+	// Contador
+	private long numMedicoes = 0;
+	private long numMedicoesVazias = 0;
 
 	// Mensagens temporais
 	String headerMessage;
@@ -62,6 +67,7 @@ public class LeituraMedicoes extends Thread{
 	String readDatabaseMessage;
 	String numOfReadsMessage;
 	String intervalDataMessage;
+	String numofReadsTotalMessage;
 	
 	String dataDistributionMessage;
 	String sLastDate;
@@ -103,13 +109,8 @@ public class LeituraMedicoes extends Thread{
    	 	// Delete All documents from collection Using blank BasicDBObjec
    	 	//BasicDBObject document = new BasicDBObject();
    	 	//mongoColLocal.deleteMany(document);
-  	 	try {
-  	 		this.recoverData();
-  	 		this.deleteLocal();
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-   	 	
+  	 	
+   	 	this.recoverData();
    	 	
    	 	/*
    	 	// Limpar a memória antiga
@@ -120,7 +121,7 @@ public class LeituraMedicoes extends Thread{
     	endTime = System.nanoTime();
     	cleanDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Limpeza Dados local");
     	*/
-   	 	
+   	 	this.deleteLocal();
    	 	
     	System.out.print(headerMessage + countDatabaseMessage  + numOfDeletesMessage + cleanDatabaseMessage + "\n");
     	
@@ -144,6 +145,11 @@ public class LeituraMedicoes extends Thread{
 		private void writeLocal(List<Document> results) {
 			
 			numOfReadsMessage = String.format("Numero de documentos lidos: %d \n", results.size());
+			if(results.size() == 0) {
+				numMedicoesVazias++;
+			}
+			numMedicoes++;
+			numofReadsTotalMessage = String.format("Tota de queries: %d  Vazias: %d\n", numMedicoes,numMedicoesVazias);
 			
 			startTime = System.nanoTime();
 			List<Document> dados = new ArrayList();
@@ -164,6 +170,9 @@ public class LeituraMedicoes extends Thread{
 							doc.append("Tempo", df1.parse(fromDate))
 								.append("Medicao", Double.parseDouble(res_t1.getString("Medicao")));
 							dados.add(doc);
+							
+							if(i == results.size() - 1)
+								limInfDateFind = df1.parse(fromDate);
 	        		
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -185,7 +194,7 @@ public class LeituraMedicoes extends Thread{
 			countData.clear();
 		}
 		
-	public void recoverData() throws MongoTimeoutException{
+	public void recoverData() {
 		Date dateBegin;
 		Date dateEnd;
 		Document  result;
@@ -220,10 +229,7 @@ public class LeituraMedicoes extends Thread{
 		Bson queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
 		mongoColNuvem.find(queryFilterTogether).into(results);
 		lateDate=dateEnd;
-		
 		this.writeLocal(results);
-		
-		
 	}
 		
 	
@@ -261,58 +267,43 @@ public class LeituraMedicoes extends Thread{
 		Bson queryFilterLower = Filters.gt("Data",df1.format(lateDate));
 		Bson queryFilterUpper = Filters.lte("Data",df1.format(currentDate));
 		Bson queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
-		mongoColNuvem.find(queryFilterTogether).into(results);
+		mongoColNuvem.find(queryFilterTogether).sort(new BasicDBObject("Data", 1)).into(results);
 		
 	
     	endTime = System.nanoTime();
     	readDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Leitura dos dados");
     	
     	if(results!=null) {
-    		try {
-    			writeLocal(results);
-			} catch (Exception e) {
-				// TODO: handle exception
-			}
-    		
+    		writeLocal(results);
     	}
+    	if(results.isEmpty()) {
+    		limInfDateFind =  currentDate;
+    	}
+    		
 		while(cond) {
-			try {
-				deleteLocal();
-			} catch (Exception e) {
-				// TODO: handle exception
-			}
-			
-			System.out.println(headerMessage + intervalDataMessage + readDatabaseMessage + numOfReadsMessage + buildResultListMessage + writeDatabaseMessage + countDatabaseMessage + dataDistributionMessage + numOfDeletesMessage + cleanDatabaseMessage );
+			deleteLocal();
+			System.out.println(headerMessage + intervalDataMessage + readDatabaseMessage + numofReadsTotalMessage + numOfReadsMessage + buildResultListMessage + writeDatabaseMessage + countDatabaseMessage + dataDistributionMessage + numOfDeletesMessage + cleanDatabaseMessage );
 			lateDate = currentDate;
 			
 			time = (new Date()).getTime() - timeDifMilliSeconds;
 			currentDate = new Date(time);
-			intervalDataMessage = "Interval: " + df1.format(lateDate) + " -- " + df1.format(currentDate) + "\n";
+			intervalDataMessage = "Interval: " + df1.format(limInfDateFind) + " -- " + df1.format(currentDate) + "\n";
 			startTime = System.nanoTime();
 			
 			results.clear();
 			
-			queryFilterLower = Filters.gt("Data",df1.format(lateDate));
+			queryFilterLower = Filters.gt("Data",df1.format(limInfDateFind));
 			queryFilterUpper = Filters.lte("Data",df1.format(currentDate));
 			queryFilterTogether = Filters.and(queryFilterLower,queryFilterUpper);
 			
-			try {
-				mongoColNuvem.find(queryFilterTogether).into(results);
-			} catch (Exception e) {
-				// TODO: handle exception
-			}
-			
+
+			mongoColNuvem.find(queryFilterTogether).sort(new BasicDBObject("Data", 1)).into(results);
 			
 			
 			endTime = System.nanoTime();
 			readDatabaseMessage = this.getMessageExecutionTask(this.startTime,this.endTime,"Leitura dos dados");
 			if(results!=null) {
-				try {
-					writeLocal(results);
-				} catch (Exception e) {
-					// TODO: handle exception
-				}
-				
+				writeLocal(results);
 			}
 			try {
 				time = (new Date()).getTime() - timeDifMilliSeconds;

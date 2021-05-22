@@ -16,6 +16,8 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.internal.async.ErrorHandlingResultCallback;
+
 import java.io.FileInputStream;
 import java.lang.invoke.StringConcatFactory;
 import java.lang.reflect.Array;
@@ -46,6 +48,8 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	private String mongo_database;
 	private String mongo_collection;
 	private String mongo_authentication;
+	
+	int counterMedicao;
 
 	// Tempo Datas
 	// "%Y-%m-%d'T'%H:%M:%S'Z'"
@@ -53,11 +57,13 @@ public class MongoToCloud extends Thread implements MqttCallback {
 	private DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	private Date currentDate = new Date();
 	private Date lateDate = new Date();
-	private long timeDifMilliSeconds = 3000; // delay na inserção e leitura de dados (1 segundo)
+	private long timeDifMilliSeconds; // delay na inserção e leitura de dados (1 segundo)
+
+	private long limiteInferior;
 
 	public MongoToCloud(String collection, String cloud_server, String cloud_topic, String client_name,
 			String mongo_address, String mongo_database, String mongo_user, String mongo_password,
-			String mongo_authentication, String mongo_replica) {
+			String mongo_authentication, String mongo_replica, long timeDiff) {
 
 		this.cloud_server = cloud_server;
 		this.cloud_topic = cloud_topic + "_" + collection.substring(6).toUpperCase();
@@ -70,6 +76,7 @@ public class MongoToCloud extends Thread implements MqttCallback {
 		this.mongo_password = mongo_password;
 		this.mongo_authentication = mongo_authentication;
 		this.mongo_replica = mongo_replica;
+		this.timeDifMilliSeconds = timeDiff;
 		connectToBroker();
 
 	}
@@ -131,44 +138,52 @@ public class MongoToCloud extends Thread implements MqttCallback {
 		currentDate = new Date(time);
 		Bson filter = Filters.eq("Tempo", currentDate);
 		collection.find(filter).into(listDocuments);
-
+		//boolean recebeuMensagem = false;
 		if (!listDocuments.isEmpty()) {
 			writeSensor(listDocuments);
+			//recebeuMensagem = true;
+		} else {
+			limiteInferior = currentDate.getTime();
 		}
-
 		while (true) {
-			long lateDate = currentDate.getTime();
-			time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
-			time = time * 1000;
-			currentDate = new Date(time);
-			long currentTime = currentDate.getTime();
 
-			// APAGAR DAQUI
-			long timeDate3 = new Date().getTime();
-			Date dateTimeDate3 = new Date(timeDate3);
-			System.out.println(cloud_topic
-					+ ": Data em que foi iniciada a query de pesquisa na base de dados mongo local : " + sdf.format(dateTimeDate3));
-			// APAGAR ATE AQUI
+				// nao recebeu ainda uma medição
+				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
+				time = time * 1000;
+				currentDate = new Date(time);
+				long currentTime = currentDate.getTime();
+				// APAGAR DAQUI
+				long timeDate3 = new Date().getTime();
+				Date dateTimeDate3 = new Date(timeDate3);
+				System.out.println(
+						cloud_topic + ": Data em que foi iniciada a query de pesquisa na base de dados mongo local : "
+								+ sdf.format(dateTimeDate3));
+				// APAGAR ATE AQUI
 
-			// APAGAR DAQUI
-			System.out.println(cloud_topic + ": Intervalo de procura na base de dados mongo local : "
-					+ sdf.format(new Date(lateDate)) + " -> " + sdf.format(new Date(currentTime)));
-			// APAGAR ATE AQUI
+				// APAGAR DAQUI
+				System.out.println(cloud_topic + ": Intervalo de procura na base de dados mongo local : "
+						+ sdf.format(new Date(limiteInferior)) + " -> " + sdf.format(new Date(currentTime)));
+				// APAGAR ATE AQUI
 
-			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
-			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
-			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
-			collection.find(filterLowAndUp).sort(new BasicDBObject("Tempo", 1)).into(listDocuments);
+				Bson filterLow = Filters.gt("Tempo", new Date(limiteInferior));
+				Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
+				Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 
-			// APAGAR DAQUI
-			long timeDate4 = new Date().getTime();
-			Date dateTimeDate4 = new Date(timeDate4);
-			System.out.println(cloud_topic
-					+ ": Data em que foi acabada a query de pesquisa na base de dados mongo local : " + sdf.format(dateTimeDate4));
-			// APAGAR ATE AQUI
-			if (!listDocuments.isEmpty()) {
-				writeSensor(listDocuments);
-			}
+				collection.find(filterLowAndUp).sort(new BasicDBObject("Tempo", 1)).into(listDocuments);
+
+				// APAGAR DAQUI
+				long timeDate4 = new Date().getTime();
+				Date dateTimeDate4 = new Date(timeDate4);
+				System.out.println(
+						cloud_topic + ": Data em que foi acabada a query de pesquisa na base de dados mongo local : "
+								+ sdf.format(dateTimeDate4));
+				// APAGAR ATE AQUI
+
+				if (!listDocuments.isEmpty()) {
+					writeSensor(listDocuments);
+					//recebeuMensagem = true;
+				}
+		
 			try {
 				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 				time = time * 1000;
@@ -186,19 +201,25 @@ public class MongoToCloud extends Thread implements MqttCallback {
 
 	public void writeSensor(List<Document> listDocuments) {
 		try {
+			int counter = 0;
 			for (Document doc : listDocuments) {
+				counterMedicao++;
 				String docToString = dealWithDoc(doc);
 				MqttMessage message = new MqttMessage();
 				message.setQos(0);
 				message.setPayload(docToString.getBytes());
+
+				System.out.println(
+						cloud_topic + ": Documento : " + docToString + " ; Medicao numero : " + counterMedicao);
 				long timeDate = new Date().getTime();
 				Date dateTimeDate = new Date(timeDate);
-				System.out.println(cloud_topic + ": Documento : " + docToString);
-
-//				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + dateTimeDate);
+				System.out.println(cloud_topic + ": Data em que foi enviada para o MQTT : " + sdf.format(dateTimeDate));
 
 				mqttclient.publish(cloud_topic, message);
-
+				if (counter == listDocuments.size() - 1) {
+					limiteInferior = doc.getDate("Tempo").getTime();
+				}
+				counter++;
 			}
 			listDocuments.clear();
 

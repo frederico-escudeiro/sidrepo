@@ -9,9 +9,10 @@ public class ValidaMedicoes {
 	private static final int size = 5;
 	private double max;
 	private double min;
+	private String tipo;
 
-	public ValidaMedicoes() {
-
+	public ValidaMedicoes(String tipo) {
+		this.tipo = tipo;
 	}
 
 	private void putMedicao(double valor) {
@@ -37,19 +38,23 @@ public class ValidaMedicoes {
 	}
 
 	public char getValidacao(double valorMedicao) {
-		if (ultimasMedicoes.size() != size) {
-			putMedicao(valorMedicao);
+		if (tipo.equals("L")) {
 			return 'v';
 		} else {
-			if (valorMedicao > (min-1) && valorMedicao < (max+1)) {
+			if (ultimasMedicoes.size() != size) {
 				putMedicao(valorMedicao);
 				return 'v';
 			} else {
-				return 'i';
+				if (valorMedicao > (min - 1) && valorMedicao < (max + 1)) {
+					putMedicao(valorMedicao);
+					return 'v';
+				} else {
+					return 'i';
+				}
 			}
 		}
 	}
-	
+
 	public void clear() {
 		ultimasMedicoes.clear();
 	}

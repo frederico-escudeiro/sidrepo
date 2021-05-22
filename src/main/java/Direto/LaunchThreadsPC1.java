@@ -101,13 +101,15 @@ public class LaunchThreadsPC1 {
 
 	private void startThreads( ResultSet result) {
 		String[] collections = {"sensorh1","sensorl1","sensort1","sensorh2","sensorl2","sensort2"};
-		int[] sensorID = { 1, 4, 2, 5, 3, 6 };
+		int[] sensorID = { 1, 2,3,4,5,6};
 		for (int i =0 ; i!= collections.length ; i++) {
 //			System.out.println(collections[i]);
-
-			MongoToSQL thread;
 			try {
-				result.next();
+			result.next();
+			if(i==1) {
+			MongoToSQL thread;
+			
+				
 //				System.out.println("Coleção : " + collections[i]);
 //				System.out.println("IDSensor: " + sensorID + " ,Zona : " + result.getString(1) + " ,Sensor :"
 //						+ result.getString(2) + " ,Limite inferior: " + result.getDouble(3) + " ,Limite Superior: "
@@ -120,12 +122,13 @@ public class LaunchThreadsPC1 {
 
 				threads.add(thread);
 				thread.start();
-
+			}
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
+		
 
 	}
 

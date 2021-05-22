@@ -40,13 +40,16 @@ public class LancaThreadsPC2 {
 
 			int sensorID = 1;
 			while (result.next()) {
-//				System.out.println("IDSensor: " + sensorID + " ,Zona : " + result.getString(1) + " ,Sensor :"
-//						+ result.getString(2) + " ,Limite inferior: " + result.getDouble(3) + " ,Limite Superior: "
-//						+ result.getDouble(4));
+				if(sensorID==2) {
+				System.out.println("IDSensor: " + sensorID + " ,Zona : " + result.getString(1) + " ,Sensor :"
+						+ result.getString(2) + " ,Limite inferior: " + result.getDouble(3) + " ,Limite Superior: "
+						+ result.getDouble(4));
 				CloudToSQL cloudToSQL = new CloudToSQL(sensorID, result.getString(1), result.getString(2),
 						result.getDouble(3), result.getDouble(4), cloud_server, cloud_topic, SQL_prof_uri, SQL_profUser,
 						SQL_profPass, SQL_uri, SQL_User, SQL_Pass, check_SQL_Cloud, timerCheckIfGetsMessages);
 				cloudToSQL.start();
+				
+			}
 				sensorID = sensorID + 1;
 			}
 		} catch (SQLException e) {

@@ -51,6 +51,10 @@ public class MongoToSQL extends Thread {
 	private CheckSensorReadingTimeoutThread threadChecker;
 	private String medicaoAnteriorData = " ";
 
+	private long limiteInferiorQuery;
+
+	int counterMedicao = 0;
+
 	/* TODO FALTA ADICIONAR OS PARAMETROS SQL */
 	public MongoToSQL(String mongo_database, String mongo_uri, String mongo_collection, String sql_uri, String user_sql,
 			String pass_sql, String sql_uri_cloud, String user_sql_cloud, String pass_sql_cloud, int check_sql_cloud,
@@ -66,7 +70,7 @@ public class MongoToSQL extends Thread {
 		this.limiteSuperior = limiteSuperior;
 		// Thread para ver sql prof
 
-		valida = new ValidaMedicoes();
+		valida = new ValidaMedicoes(tipoSensor);
 		try {
 			System.out
 					.println("SQL_Cloud_Uri: " + sql_uri_cloud + " , user_cloud: " + user_sql_cloud + ", pass_cloud : "
@@ -107,37 +111,49 @@ public class MongoToSQL extends Thread {
 		Bson filter = Filters.eq("Tempo", currentDate);
 		collection.find(filter).into(listDocuments);
 		if (!listDocuments.isEmpty()) {
+			System.out.println("Encontrei na primeira iteracao");
 			dealWithDataToSQL(listDocuments);
+		} else {
+			System.out.println("Nao encontrei na primeira iteracaao");
+			limiteInferiorQuery = currentDate.getTime();
 		}
-
 		while (true) {
-			long lateDate = currentDate.getTime();
+
+			// nao recebeu ainda uma medição
 			time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
 			time = time * 1000;
 			currentDate = new Date(time);
 			long currentTime = currentDate.getTime();
-			//APAGAR DAQUI
+			// APAGAR DAQUI
 			long timeDate3 = new Date().getTime();
 			Date dateTimeDate3 = new Date(timeDate3);
-			System.out.println(tipoSensor+zonaID+": Data em que foi iniciada a query de pesquisa na base de dados mongo local : "+sdf.format(dateTimeDate3));
-			//APAGAR ATE AQUI
+			System.out.println(tipoSensor + zonaID
+					+ ": Data em que foi iniciada a query de pesquisa na base de dados mongo local : "
+					+ sdf.format(dateTimeDate3));
+			// APAGAR ATE AQUI
+
 			// APAGAR DAQUI
-						System.out.println(tipoSensor+zonaID+": Intervalo de procura na base de dados mongo local : "
-								+ sdf.format(new Date(lateDate)) + " -> " + sdf.format(new Date(currentTime)));
-						// APAGAR ATE AQUI
-			Bson filterLow = Filters.gt("Tempo", new Date(lateDate));
+			System.out.println(tipoSensor + zonaID + ": Intervalo de procura na base de dados mongo local : "
+					+ sdf.format(new Date(limiteInferiorQuery)) + " -> " + sdf.format(new Date(currentTime)));
+			// APAGAR ATE AQUI
+
+			Bson filterLow = Filters.gt("Tempo", new Date(limiteInferiorQuery));
 			Bson filterUp = Filters.lte("Tempo", new Date(currentTime));// para evitar o envio de duplicados
 			Bson filterLowAndUp = Filters.and(filterLow, filterUp);
 
 			collection.find(filterLowAndUp).sort(new BasicDBObject("Tempo", 1)).into(listDocuments);
-//			//APAGAR DAQUI
-//			long timeDate4 = new Date().getTime();
-//			Date dateTimeDate4 = new Date(timeDate4);
-//			System.out.println("T1: Data em que foi acabada a query de pesquisa na base de dados mongo local : "+dateTimeDate4);
-//			//APAGAR ATE AQUI
+
+			// APAGAR DAQUI
+			long timeDate4 = new Date().getTime();
+			Date dateTimeDate4 = new Date(timeDate4);
+			System.out.println(tipoSensor + zonaID
+					+ ": Data em que foi acabada a query de pesquisa na base de dados mongo local : "
+					+ sdf.format(dateTimeDate4));
+			// APAGAR ATE AQUI
 
 			if (!listDocuments.isEmpty()) {
 				dealWithDataToSQL(listDocuments);
+				// recebeuMensagem = true;
 			}
 			try {
 				time = ((new Date()).getTime() - timeDifMilliSeconds) / 1000;
@@ -155,6 +171,7 @@ public class MongoToSQL extends Thread {
 	}
 
 	private void dealWithDataToSQL(List<Document> listDocuments) {
+		int counter = 0;
 		for (Document document : listDocuments) {
 			String docToString = dealWithDoc(document);
 			String[] data_medicao = docToString.split(" ");
@@ -174,19 +191,22 @@ public class MongoToSQL extends Thread {
 				String procedMedicaoInsert = "CALL `criar_medicao`('" + sensorID + "','" + data1_final + "','"
 						+ data_medicao[1] + "','" + validacao + "');";
 				try {
-//				//APAGAR DAQUI
-//				long timeDate4 = new Date().getTime();
-//				Date dateTimeDate4 = new Date(timeDate4);
-//				System.out.println("T1: Data em que foi inserida a medição no SQL : "+dateTimeDate4);
-//				//APAGAR ATE AQUI
+					// APAGAR DAQUI
+					counterMedicao++;
+					long timeDate4 = new Date().getTime();
+					Date dateTimeDate4 = new Date(timeDate4);
+					System.out.println(tipoSensor + zonaID + ": Data em que foi inserida a medição " + counterMedicao
+							+ " no SQL : " + sdf.format(dateTimeDate4));
+					// APAGAR ATE AQUI
 					statementLocalhost.executeUpdate(procedMedicaoInsert);
+
 				} catch (SQLException e) {
 					e.printStackTrace();
 				}
-			}else {
+			} else {
 				String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor " + tipoSensor + zonaID
-						+ " registou medições duplicadas', 'O sensor registou medições duplicadas em " +medicaoAnteriorData 
-						+ "')";
+						+ " registou medições duplicadas', 'O sensor registou medições duplicadas em "
+						+ medicaoAnteriorData + "')";
 				try {
 					statementLocalhost.executeUpdate(sqlQuery);
 				} catch (SQLException e) {
@@ -195,6 +215,10 @@ public class MongoToSQL extends Thread {
 				}
 			}
 			medicaoAnteriorData = data1_final;
+			if (counter == listDocuments.size() - 1) {
+				limiteInferiorQuery = document.getDate("Tempo").getTime();
+			}
+			counter++;
 		}
 		listDocuments.clear();
 
@@ -261,19 +285,48 @@ public class MongoToSQL extends Thread {
 				try {
 					sleep(checkTime);
 					valida.clear();
-					String sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor sem registar medições', 'Não são recebidas medições há "
-							+ counter * checkTime / 1000 + " segundos.')";
+					String sqlQuery = "";
+
+					sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor " + tipoSensor + zonaID
+							+ " sem registar medições', 'Não são recebidas medições há "
+							+ getTimeText(counter * checkTime / 1000) + ".')";
+
 					try {
 						statementLocalhost.executeUpdate(sqlQuery);
 						counter++;
 					} catch (SQLException e) {
-						System.out.println("erro na querySQL");
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 
 				} catch (InterruptedException e) {
-					counter = 0;
+					counter = 1;
 					System.out.println("Recebeu Mensagem");
 				}
+		}
+
+		private String getTimeText(Integer counter) {
+			if (counter >= 60) {
+				float auxTime = counter / 60f;
+				int auxMinutes = (int) (auxTime);
+				int auxSeconds = (int) ((auxTime - auxMinutes) * 60);
+				String aux = "";
+				if (auxMinutes > 1) {
+					aux = aux + auxMinutes + " minutos";
+				} else {
+					aux = aux + auxMinutes + " minuto";
+				}
+				if (auxSeconds > 0) {
+					aux = aux + " e " + auxSeconds + " segundos.";
+				} else {
+					aux = aux + ".";
+				}
+
+				return aux;
+			} else {
+				String aux = counter + " segundos.";
+				return aux;
+			}
 		}
 
 	}

@@ -34,7 +34,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 	private CheckSensorReadingTimeoutThread threadChecker;
 	private ValidaMedicoes valida;
 	private DateFormat df1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
+	int counterMedicao = 0;
 	private DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	private String medicaoAnteriorData = " ";
 
@@ -54,10 +54,11 @@ public class CloudToSQL extends Thread implements MqttCallback {
 			connectToSQL(SQL_prof_uri, SQL_profUser, SQL_profPass, false);
 			new CheckProfessorCloudSensorThread(timerCheckCloudProf).start();
 			threadChecker = new CheckSensorReadingTimeoutThread(timerCheckIfGetsMessages);
-			valida = new ValidaMedicoes();
+			valida = new ValidaMedicoes(tipoSensor);
 			threadChecker.start();
 		} catch (ClassNotFoundException | SQLException e) {
 			System.out.println("Erro no connect");
+			e.printStackTrace();
 		}
 
 	}
@@ -90,7 +91,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 	void dealWithData(String message) {
 		String[] data_medicao = message.split(" ");
-		System.out.println("Data :" + data_medicao[0] + ", Valor_Medicao" + data_medicao[1]);
+		System.out.println("Data :" + data_medicao[0] + ", Valor_Medicao : " + data_medicao[1]);
 		String data1 = data_medicao[0].replace("T", " ");
 		String data1_final = data1.replace("Z", "");
 		char validacao;
@@ -112,7 +113,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 				statementLocalhost.executeUpdate(procedMedicaoInsert);
 				long timeDate = new Date().getTime();
 				Date dateTimeDate = new Date(timeDate);
-//			System.out.println(cloud_topic + ": Data em que foi inserida no SQL : "+dateTimeDate);
+			System.out.println(cloud_topic + ": Data em que foi inserida no SQL : "+sdf.format(dateTimeDate));
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -133,12 +134,13 @@ public class CloudToSQL extends Thread implements MqttCallback {
 
 	// metodo da interface
 	public void messageArrived(String var1, MqttMessage message) throws Exception {
+		counterMedicao++;
 		threadChecker.interrupt();
 		long timeDate = new Date().getTime();
 		Date dateTimeDate = new Date(timeDate);
-		System.out.println(cloud_topic+": Data em que foi recebida a mensagem do MQTT : "+sdf.format(dateTimeDate));
+		System.out.println(cloud_topic+": Data em que foi recebida a "+ counterMedicao +" mensagem do MQTT : "+sdf.format(dateTimeDate));
 		dealWithData(message.toString());
-
+		
 	}
 
 	// metodo da interface
@@ -168,7 +170,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 							double limSup = result.getDouble(4);
 							double limInf = result.getDouble(3);
 							System.out.println(
-									String.valueOf(tipoDoSensor).toUpperCase() + idSensor + ": Limite Superior : "
+									String.valueOf(tipoDoSensor).toUpperCase() + idZona + ": Limite Superior : "
 											+ result.getString(4) + " Limite Inferior : " + result.getString(3));
 							if (limSup != limiteSuperior) {
 								limiteSuperior = limSup;
@@ -209,8 +211,7 @@ public class CloudToSQL extends Thread implements MqttCallback {
 					String sqlQuery = "";
 
 					sqlQuery = "CALL `criar_alerta`(NULL, NULL, 'Alerta Sensor " + tipoDoSensor + idZona
-							+ " sem registar medições', 'Não são recebidas medições há " + counter * checkTime / 1000
-							+ " segundos.')";
+							+ " sem registar medições', 'Não são recebidas medições há " + getTimeText(counter * checkTime / 1000)+".')";
 
 					try {
 						statementLocalhost.executeUpdate(sqlQuery);
@@ -225,6 +226,30 @@ public class CloudToSQL extends Thread implements MqttCallback {
 					System.out.println("Recebeu Mensagem");
 				}
 		}
+		private String getTimeText(Integer counter) {
+			if(counter>=60) {
+				float auxTime=  counter/60f;
+				int auxMinutes = (int)(auxTime);
+				int auxSeconds = (int)((auxTime-auxMinutes)*60);
+				String aux="";
+				if(auxMinutes>1) {
+					aux = aux + auxMinutes + " minutos";
+				} else {
+					aux = aux + auxMinutes + " minuto";
+				}
+				if(auxSeconds>0) {
+					aux = aux + " e " + auxSeconds + " segundos.";
+				} else {
+					aux = aux + ".";
+				}
+				
+				return aux;
+			} else {
+				String aux = counter + " segundos.";
+				return aux;
+			}
+		}
+
 
 	}
 
