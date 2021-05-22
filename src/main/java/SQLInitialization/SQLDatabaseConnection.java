@@ -636,17 +636,10 @@ public class SQLDatabaseConnection {
             String privilegiosRemoverCulturaProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.remover_cultura TO 'administrador'";
             String privilegiosAtribuirCulturaInvestigadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.atribuir_cultura_investigador TO 'administrador'";
             String privilegiosDesatribuirCulturaInvestigadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.desatribuir_cultura_investigador TO 'administrador'";
-            String privilegiosAlterarCulturaProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_cultura TO 'administrador'";
             String privilegiosCriarUtilizadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.criar_utilizador TO 'administrador'";
             String privilegiosRemoverUtilizadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.remover_utilizador TO 'administrador'";
             String privilegiosAlterarUtilizadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.alterar_utilizador TO 'administrador'";
-            String privilegiosAtualizarAlertasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.atualizar_alertas TO 'administrador'";
-            String privilegiosListarAlertasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_alertas TO 'administrador'";
-            String privilegiosListarCulturasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_culturas TO 'administrador'";
-            String privilegiosListarCulturasValidasProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_culturas_validas TO 'administrador'";
             String privilegiosListarMedicoesProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.listar_medicoes TO 'administrador'";
-            String privilegiosMostraCulturaProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.mostra_cultura TO 'administrador'";
-            String privilegiosMostraUtilizadorProcedureAdministrador = "GRANT EXECUTE ON PROCEDURE sid2021.mostra_utilizador TO 'administrador'";
             statementLocalhost.executeUpdate(dropRoleAdmin);
             statementLocalhost.executeUpdate(createAdmin);
             statementLocalhost.executeUpdate(privilegiosSelectCulturaAdministrador);
@@ -655,17 +648,10 @@ public class SQLDatabaseConnection {
             statementLocalhost.executeUpdate(privilegiosRemoverCulturaProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosAtribuirCulturaInvestigadorProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosDesatribuirCulturaInvestigadorProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosAlterarCulturaProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosCriarUtilizadorProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosRemoverUtilizadorProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosAlterarUtilizadorProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosAtualizarAlertasProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosListarAlertasProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosListarCulturasProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosListarCulturasValidasProcedureAdministrador);
             statementLocalhost.executeUpdate(privilegiosListarMedicoesProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosMostraCulturaProcedureAdministrador);
-            statementLocalhost.executeUpdate(privilegiosMostraUtilizadorProcedureAdministrador);
 
             //Criar ROLE técnico de manutenção
             String dropRoleTecnico = "DROP ROLE IF EXISTS `tecnico`;";
