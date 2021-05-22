@@ -29,7 +29,7 @@ public class LancaThreadsPC1 {
 			Properties properties = new Properties();
 			properties.load(new FileInputStream("MongoToCloud.ini"));
 			String cloud_server = properties.getProperty("cloud_server");
-			String cloud_topic = properties.getProperty("cloud_topic") ;
+			String cloud_topic = properties.getProperty("cloud_topic");
 			System.out.println(cloud_topic);
 			String client_name = properties.getProperty("client_name");
 			String mongo_address = properties.getProperty("mongo_address");
@@ -38,12 +38,21 @@ public class LancaThreadsPC1 {
 			String mongo_password = properties.getProperty("mongo_password");
 			String mongo_authentication = properties.getProperty("mongo_authentication");
 			String mongo_replica = properties.getProperty("mongo_replica");
+			String[] timeDiff = { properties.getProperty("timeDiff_T2"), properties.getProperty("timeDiff_H2"),
+					properties.getProperty("timeDiff_L2"), properties.getProperty("timeDiff_H1"),
+					properties.getProperty("timeDiff_T1"), properties.getProperty("timeDiff_L1") };
+			int counter = 0;
+			int i = 0;
 			for (String collection : listCollections) {
-				System.out.println(collection);
-				MongoToCloud m2c = new MongoToCloud(collection, cloud_server, cloud_topic, client_name, mongo_address,
-						mongo_database, mongo_user, mongo_password, mongo_authentication, mongo_replica);
-				m2c.start();
-				listThreads.add(m2c);
+				if (i == 5) {
+					System.out.println(collection);
+					MongoToCloud m2c = new MongoToCloud(collection, cloud_server, cloud_topic, client_name,
+							mongo_address, mongo_database, mongo_user, mongo_password, mongo_authentication,
+							mongo_replica, Long.parseLong(timeDiff[counter]));
+					m2c.start();
+					listThreads.add(m2c);
+				}
+				i++;
 			}
 		} catch (Exception properties) {
 			System.out.println("Error reading MongoToCloud.ini file " + properties);
