@@ -668,10 +668,10 @@ public class SQLDatabaseConnection {
             String createJava = "CREATE ROLE java;";
             String privilegiosCriarMedicaoProcedureJava = "GRANT EXECUTE ON PROCEDURE sid2021.criar_medicao TO 'java'";
             String privilegiosCriarAlertaProcedureJava = "GRANT EXECUTE ON PROCEDURE sid2021.criar_alerta TO 'java'";
-            String dropUserJava = "DROP USER IF EXISTS java@localhost;";
-            String createUserJava = "CREATE USER java@localhost IDENTIFIED BY 'java'";
-            String grantDefaultRoleJava = "GRANT java TO java@localhost;";
-            String setDefaultRoleJava = "SET DEFAULT ROLE java FOR java@localhost";
+            String dropUserJava = "DROP USER IF EXISTS java@'%';";
+            String createUserJava = "CREATE USER java@'%' IDENTIFIED BY 'java'";
+            String grantDefaultRoleJava = "GRANT java TO java@'%';";
+            String setDefaultRoleJava = "SET DEFAULT ROLE java FOR java@'%'";
             statementLocalhost.executeUpdate(dropRoleJava);
             statementLocalhost.executeUpdate(createJava);
             statementLocalhost.executeUpdate(privilegiosCriarMedicaoProcedureJava);
